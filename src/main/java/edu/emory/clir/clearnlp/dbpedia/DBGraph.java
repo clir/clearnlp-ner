@@ -1,4 +1,4 @@
-package edu.emory.clir.clearnlp.ner;
+package edu.emory.clir.clearnlp.dbpedia;
 
 import java.util.HashMap;
 import java.util.Map;
