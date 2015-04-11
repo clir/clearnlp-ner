@@ -58,6 +58,11 @@ public class PrefixTreeGenerator implements DBPediaXML
 		return map;
 	}
 	
+	/**
+	 * Note this list is an object
+	 * @param tokenizer
+	 * @return
+	 */
 	public PrefixTree<String,NERInfoList> getPrefixTree(AbstractTokenizer tokenizer)
 	{
 		PrefixTree<String,NERInfoList> tree = new PrefixTree<>();

@@ -29,11 +29,11 @@ public class DBPediaOntologyExtractor implements DBPediaXML
 		String rdfAbout, rdfResource;
 		Element owlClass, subClass;
 		NodeList subClasses;
-		StringBuilder sb;
+		StringBuilder sb = new StringBuilder();
 		
 		for (i=0; i<size; i++)
 		{	
-			sb = new StringBuilder();
+			sb.setLength(0);;
 			owlClass = (Element)classes.item(i);
 			subClasses = owlClass.getElementsByTagName(RDFS_SUBCLASS_OF);
 			len = subClasses.getLength();
