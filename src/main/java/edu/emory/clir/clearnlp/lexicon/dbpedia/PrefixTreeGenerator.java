@@ -21,6 +21,8 @@ import edu.emory.clir.clearnlp.tokenization.AbstractTokenizer;
 import edu.emory.clir.clearnlp.util.DSUtils;
 import edu.emory.clir.clearnlp.util.IOUtils;
 import edu.emory.clir.clearnlp.util.Joiner;
+import edu.emory.clir.clearnlp.util.StringUtils;
+import edu.emory.clir.clearnlp.util.constant.StringConst;
 import edu.emory.clir.clearnlp.util.lang.TLanguage;
 
 public class PrefixTreeGenerator implements DBPediaXML
@@ -99,10 +101,42 @@ public class PrefixTreeGenerator implements DBPediaXML
 		for (String alias : aliases)
 		{
 			tokens = tokenizer.tokenize(alias);
-			t = new String[tokens.size()];
-			tokens.toArray(t);
-			tree.set(t, list, s -> s);
+			t = trimTokens(tokens);
+			if (t.length > 0) tree.set(t, list, s -> s);
 		}
+	}
+	
+	private String[] trimTokens(List<String> tokens)
+	{
+		int i, size, bIdx = -1;
+		
+		for (i=tokens.size()-1; i>=0; i--)
+		{
+			if (StringUtils.containsDigitOnly(tokens.get(i)))
+				tokens.remove(i);
+			else
+				break;
+		}
+		
+		size = tokens.size();
+		
+		for (i=0; i<size; i++)
+		{
+			if (tokens.get(i).equals(StringConst.LRB))
+				bIdx = i;
+			else if (tokens.get(i).equals(StringConst.RRB) && bIdx >= 0)
+			{
+				tokens.subList(bIdx, i+1).clear();
+				break;
+			}
+		}
+		
+		if (tokens.size() == 1 && StringUtils.containsDigitOnly(tokens.get(0)))
+			tokens.clear();
+		
+		String[] t = new String[tokens.size()];
+		tokens.toArray(t);
+		return t;
 	}
 	
 	static public void main(String[] args) throws Exception
@@ -115,20 +149,16 @@ public class PrefixTreeGenerator implements DBPediaXML
 		DBPediaTypeMap typeMap = gson.fromJson(new InputStreamReader(IOUtils.createXZBufferedInputStream(typeMapFile)), DBPediaTypeMap.class);
 		DBPediaInfoMap infoMap = gson.fromJson(new InputStreamReader(IOUtils.createXZBufferedInputStream(infoMapFile)), DBPediaInfoMap.class);
 		AbstractTokenizer tokenizer = NLPUtils.getTokenizer(TLanguage.ENGLISH);
-		PrefixTreeGenerator ptg = new PrefixTreeGenerator(typeMap, infoMap, DSUtils.toHashSet(DBPediaType.Person, DBPediaType.Place, DBPediaType.Organisation));
+		PrefixTreeGenerator ptg = new PrefixTreeGenerator(typeMap, infoMap, DSUtils.toHashSet(DBPediaType.Person, DBPediaType.Mayor, DBPediaType.PersonFunction, DBPediaType.Name, DBPediaType.Place, DBPediaType.Organisation, DBPediaType.Website));
 		PrefixTree<String,NERInfoList> prefixTree = ptg.getPrefixTree(tokenizer);
 		ObjectOutputStream out = new ObjectOutputStream(IOUtils.createXZBufferedOutputStream(prefixTreeFile));
 		out.writeObject(prefixTree);
 		out.close();
 		
-		String[] array = "the Methodist Episcopal Church and was named in honor of Methodist bishop John Emory".split(" ");
-		long st, et;
+		String[] array = "John Emory Werner Erhard 1 Revolutionary Communist Party Project X 42nd Infantry Division".split(" ");
 		
-		st = System.currentTimeMillis();
 		for (ObjectIntIntTriple<NERInfoList> t : prefixTree.getAll(array, 0, String::toString, true, true))
-			System.out.println(Joiner.join(array, " ", t.i1, t.i2+1));
-		et = System.currentTimeMillis();
-		System.out.println(et-st);
+			System.out.println(t.o+" "+Joiner.join(array, " ", t.i1, t.i2+1));
 		
 //		String[] array = "The Chicago Bulls are an American professional basketball team . They are based in Chicago , Illinois , playing in the Central Division of the Eastern Conference in the National Basketball Association (NBA) . The team was founded on January 26 , 1966 . The Bulls play their home games at the United Center . The Bulls saw their greatest success during the 1990s . They are known for having one of the NBA 's greatest dynasties , winning six NBA championships between 1991 and 1998 with two three-peats . All six championship teams were led by Hall of Famers Michael Jordan , Scottie Pippen and coach Phil Jackson . The Bulls are the only NBA franchise to win multiple championships and never lose an NBA Finals in their history.".split(" ");
 //		ObjectInputStream in = new ObjectInputStream(IOUtils.createXZBufferedInputStream(prefixTreeFile));

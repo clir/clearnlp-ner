@@ -25,6 +25,7 @@ import edu.emory.clir.clearnlp.classification.vector.StringFeatureVector;
 import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
 import edu.emory.clir.clearnlp.component.AbstractStatisticalComponent;
+import edu.emory.clir.clearnlp.component.utils.CFlag;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
 import edu.emory.clir.clearnlp.feature.common.CommonFeatureExtractor;
@@ -153,6 +154,12 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 					tree.get(i).setNamedEntityTag(NERTag.toBILOUTag(BILOU.I, tag));
 			}
 		}
+	}
+	
+	public void learnDictionary(DEPTree tree, PrefixTree<String,NERInfoList> dictionary)
+	{
+		NERState state = new NERState(tree, CFlag.TRAIN, dictionary);
+		state.adjustDictionary();
 	}
 	
 //	====================================== ONLINE TRAIN ======================================
