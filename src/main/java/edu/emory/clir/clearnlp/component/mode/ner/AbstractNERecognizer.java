@@ -26,13 +26,17 @@ import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
 import edu.emory.clir.clearnlp.component.AbstractStatisticalComponent;
 import edu.emory.clir.clearnlp.component.utils.CFlag;
+import edu.emory.clir.clearnlp.component.utils.NLPUtils;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
 import edu.emory.clir.clearnlp.feature.common.CommonFeatureExtractor;
 import edu.emory.clir.clearnlp.ner.BILOU;
 import edu.emory.clir.clearnlp.ner.NERInfoList;
 import edu.emory.clir.clearnlp.ner.NERTag;
+import edu.emory.clir.clearnlp.reader.TSVReader;
+import edu.emory.clir.clearnlp.util.IOUtils;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
+import edu.emory.clir.clearnlp.util.lang.TLanguage;
 
 /**
  * @since 3.0.3
@@ -139,6 +143,8 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	{
 		String tag; int i;
 		
+		for (DEPNode node : tree) node.setNamedEntityTag("O");
+		
 		for (ObjectIntIntTriple<NERInfoList> t : dictionary.getAll(tree.toNodeArray(), 1, DEPNode::getWordForm, true, true))
 		{
 			tag = t.o.joinTags(StringConst.COLON);
@@ -158,6 +164,7 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	
 	public void learnDictionary(DEPTree tree, PrefixTree<String,NERInfoList> dictionary)
 	{
+		for (DEPNode node : tree) if (node.getNamedEntityTag() == null) node.setNamedEntityTag("O");
 		NERState state = new NERState(tree, CFlag.TRAIN, dictionary);
 		state.adjustDictionary();
 	}
@@ -203,5 +210,19 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	protected void onlineLexicons(DEPTree tree)
 	{
 			
+	}
+	
+	static public void main(String[] args)
+	{
+		String dictFile = "general-en-ner-dict.xz";
+		String inputFile = "/Users/jdchoi/Desktop/tmp.txt";
+		TSVReader reader = new TSVReader(0, 1, 2, 3, 7, 4, 5, 6, -1, -1);
+		PrefixTree<String,NERInfoList> dictionary = NLPUtils.getNEDictionary(TLanguage.ENGLISH, dictFile);
+		AbstractNERecognizer ner = new EnglishNERecognizer();
+		reader.open(IOUtils.createFileInputStream(inputFile));
+		DEPTree tree;
+		
+		while ((tree = reader.next()) != null)
+			ner.learnDictionary(tree, dictionary);
 	}
 }
