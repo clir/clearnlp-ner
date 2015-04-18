@@ -15,6 +15,7 @@
  */
 package edu.emory.clir.clearnlp.component.mode.ner;
 
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
@@ -24,10 +25,11 @@ import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.component.utils.NLPUtils;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
-import edu.emory.clir.clearnlp.ner.NERInfoList;
+import edu.emory.clir.clearnlp.util.BinUtils;
 import edu.emory.clir.clearnlp.util.Joiner;
 import edu.emory.clir.clearnlp.util.Splitter;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
+import edu.emory.clir.clearnlp.util.lang.TLanguage;
 
 /**
  * @since 3.0.3
@@ -36,18 +38,21 @@ import edu.emory.clir.clearnlp.util.constant.StringConst;
 public class NERLexicon implements Serializable
 {
 	private static final long serialVersionUID = 3816259878124239839L;
-	private PrefixTree<String,NERInfoList> ne_dictionary;
+	private PrefixTree<String,NERInfoSet> ne_dictionary;
+	private PrefixTree<String,String[]> ne_cluster;
 	private Bigram<String,String> dict_counts;
 	private int dictionary_cutoff;
 	
 	public NERLexicon(NERConfiguration configuration)
 	{
 		setDictionaryCutoff(configuration.getDictionaryCutoff());
-		String dictPath = configuration.getDictionaryPath();
 		dict_counts = new Bigram<>();
 		
-		if (dictPath != null)	setDictionary(NLPUtils.getNEDictionary(configuration.getLanguage(), dictPath));
-		else					setDictionary(new PrefixTree<>());
+		if (configuration.getDictionaryPath() != null) setDictionary(getNEDictionary(configuration.getLanguage(), configuration.getDictionaryPath()));
+		else setDictionary(new PrefixTree<>());
+		
+		if (configuration.getBrownClusterPath() != null) setBrownCluster(getBrownClusters(configuration.getBrownClusterPath()));
+		else setBrownCluster(new PrefixTree<>());
 	}
 	
 	public void collect(DEPTree tree)
@@ -60,13 +65,14 @@ public class NERLexicon implements Serializable
 		{
 			bIdx = p.i / size;
 			eIdx = p.i % size;
-			dict_counts.add(p.o, Joiner.join(nodes, StringConst.SPACE, bIdx, eIdx+1));
+			if (p.o.equals("MISC"))
+				dict_counts.add(p.o, Joiner.join(nodes, StringConst.SPACE, bIdx, eIdx+1, DEPNode::getWordForm));
 		}
 	}
 	
 	public void populateDictionary()
 	{
-		NERInfoList list;
+		NERInfoSet set;
 		String[]   array;
 		
 		for (String type : dict_counts.getBigramSet())
@@ -74,22 +80,32 @@ public class NERLexicon implements Serializable
 			for (ObjectIntPair<String> p : dict_counts.toList(type, dictionary_cutoff))
 			{
 				array = Splitter.splitSpace(p.o);
-				list  = NERState.pick(ne_dictionary, type, array, 0, array.length, String::toString, p.i);
-				list.addCorrectCount(p.i);
+				set = NERState.pick(ne_dictionary, type, array, 0, array.length, String::toString, p.i);
+				set.addCorrectCount(p.i);
 			}
 		}
 		
 		dict_counts = null;
 	}
 	
-	public PrefixTree<String,NERInfoList> getDictionary()
+	public PrefixTree<String,NERInfoSet> getDictionary()
 	{
 		return ne_dictionary;
 	}
 	
-	public void setDictionary(PrefixTree<String,NERInfoList> dictionary)
+	public void setDictionary(PrefixTree<String,NERInfoSet> dictionary)
 	{
 		ne_dictionary = dictionary;
+	}
+	
+	public PrefixTree<String,String[]> getBrownCluster()
+	{
+		return ne_cluster;
+	}
+	
+	public void setBrownCluster(PrefixTree<String,String[]> cluster)
+	{
+		ne_cluster = cluster;
 	}
 	
 	public int getDictionaryCutoff()
@@ -100,5 +116,45 @@ public class NERLexicon implements Serializable
 	public void setDictionaryCutoff(int cutoff)
 	{
 		dictionary_cutoff = cutoff;
+	}
+	
+	@SuppressWarnings("unchecked")
+	static public PrefixTree<String,NERInfoSet> getNEDictionary(TLanguage language, ObjectInputStream in)
+	{
+		BinUtils.LOG.info("Loading named entity dictionary.\n");
+		PrefixTree<String,NERInfoSet> tree = null;
+		
+		try
+		{
+			tree = (PrefixTree<String,NERInfoSet>)in.readObject();
+		}
+		catch (Exception e) {e.printStackTrace();}
+		
+		return tree;
+	}
+	
+	static public PrefixTree<String,NERInfoSet> getNEDictionary(TLanguage language, String modelPath)
+	{
+		return getNEDictionary(language, NLPUtils.getObjectInputStream(modelPath));
+	}
+	
+	@SuppressWarnings("unchecked")
+	static public PrefixTree<String,String[]> getBrownClusters(ObjectInputStream in)
+	{
+		BinUtils.LOG.info("Loading brown clusters.\n");
+		PrefixTree<String,String[]> tree = null;
+		
+		try
+		{
+			tree = (PrefixTree<String,String[]>)in.readObject();
+		}
+		catch (Exception e) {e.printStackTrace();}
+		
+		return tree;
+	}
+	
+	static public PrefixTree<String,String[]> getBrownClusters(String modelPath)
+	{
+		return getBrownClusters(NLPUtils.getObjectInputStream(modelPath));
 	}
 }

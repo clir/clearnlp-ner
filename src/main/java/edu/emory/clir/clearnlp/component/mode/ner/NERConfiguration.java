@@ -30,6 +30,7 @@ import edu.emory.clir.clearnlp.util.constant.StringConst;
  */
 public class NERConfiguration extends AbstractConfiguration
 {
+	private String brown_cluster_path;
 	private String dictionary_path;
 	private int dictionary_cutoff;
 	
@@ -50,11 +51,15 @@ public class NERConfiguration extends AbstractConfiguration
 	{
 		Element eMode = getModeElement();
 		
-		String dictPath = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "dictionary_path"));
-		if (dictPath.equals(StringConst.EMPTY)) dictPath = null;
-		setDictionaryPath(dictPath);
+		String dictPath  = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "dictionary_path"));
+		String brownPath = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "brown_cluster_path"));
+		int dictCutoff   = XmlUtils.getIntegerTextContent(XmlUtils.getFirstElementByTagName(eMode, "dictionary_cutoff"));
 		
-		int dictCutoff = XmlUtils.getIntegerTextContent(XmlUtils.getFirstElementByTagName(eMode, "dictionary_cutoff"));
+		if (dictPath .equals(StringConst.EMPTY)) dictPath = null;
+		if (brownPath.equals(StringConst.EMPTY)) dictPath = null;
+		
+		setDictionaryPath(dictPath);
+		setBrownClusterPath(brownPath);
 		setDictionaryCutoff(dictCutoff);
 	}
 	
@@ -66,6 +71,16 @@ public class NERConfiguration extends AbstractConfiguration
 	public void setDictionaryPath(String path)
 	{
 		dictionary_path = path;
+	}
+	
+	public String getBrownClusterPath()
+	{
+		return brown_cluster_path;
+	}
+	
+	public void setBrownClusterPath(String path)
+	{
+		brown_cluster_path = path;
 	}
 	
 	public int getDictionaryCutoff()

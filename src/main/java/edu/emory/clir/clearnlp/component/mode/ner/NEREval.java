@@ -22,7 +22,6 @@ import edu.emory.clir.clearnlp.collection.pair.ObjectIntPair;
 import edu.emory.clir.clearnlp.component.evaluation.AbstractF1Eval;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
-import edu.emory.clir.clearnlp.ner.NERTag;
 
 /**
  * @since 3.0.3

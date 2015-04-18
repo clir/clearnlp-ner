@@ -11,12 +11,12 @@ import java.util.Set;
 
 import com.google.gson.Gson;
 
+import edu.emory.clir.clearnlp.collection.tree.PrefixNode;
 import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
+import edu.emory.clir.clearnlp.component.mode.ner.NERInfoSet;
+import edu.emory.clir.clearnlp.component.mode.ner.NERTag;
 import edu.emory.clir.clearnlp.component.utils.NLPUtils;
-import edu.emory.clir.clearnlp.ner.NERInfo;
-import edu.emory.clir.clearnlp.ner.NERInfoList;
-import edu.emory.clir.clearnlp.ner.NERTag;
 import edu.emory.clir.clearnlp.tokenization.AbstractTokenizer;
 import edu.emory.clir.clearnlp.util.DSUtils;
 import edu.emory.clir.clearnlp.util.IOUtils;
@@ -60,32 +60,28 @@ public class PrefixTreeGenerator implements DBPediaXML
 		return map;
 	}
 	
-	/**
-	 * Note this list is an object
-	 * @param tokenizer
-	 * @return
-	 */
-	public PrefixTree<String,NERInfoList> getPrefixTree(AbstractTokenizer tokenizer)
+	/** Note this list is an object. */
+	public PrefixTree<String,NERInfoSet> getPrefixTree(AbstractTokenizer tokenizer)
 	{
-		PrefixTree<String,NERInfoList> tree = new PrefixTree<>();
-		NERInfoList list;
+		PrefixTree<String,NERInfoSet> tree = new PrefixTree<>();
+		NERInfoSet list;
 		DBPediaInfo info;
 		
 		for (Entry<String,DBPediaInfo> e : info_map.entrySet())
 		{
 			info = e.getValue();
-			list = getNERInfoList(e.getKey(), info.getTypes());
+			list = getNERInfoSet(e.getKey(), info.getTypes());
 			if (list != null) addAliases(tokenizer, tree, info.getAliases(), list);
 		}
 		
 		return tree;
 	}
 	
-	private NERInfoList getNERInfoList(String title, Set<DBPediaType> types)
+	private NERInfoSet getNERInfoSet(String title, Set<DBPediaType> types)
 	{
 		Set<DBPediaType> set = new HashSet<>();
 		DBPediaType superType;
-		
+			
 		for (DBPediaType type : types)
 		{
 			if ((superType = super_type_map.get(type)) != null)
@@ -93,13 +89,14 @@ public class PrefixTreeGenerator implements DBPediaXML
 		}
 		
 		if (set.isEmpty()) return null;
-		NERInfoList list = new NERInfoList(title);
-		for (DBPediaType type : set) list.add(new NERInfo(NERTag.fromDBPediaType(type)));
+		NERInfoSet list = new NERInfoSet();
+		for (DBPediaType type : set) list.addCategory(NERTag.fromDBPediaType(type));
 		return list;
 	}
 	
-	private void addAliases(AbstractTokenizer tokenizer, PrefixTree<String,NERInfoList> tree, Set<String> aliases, NERInfoList list)
+	private void addAliases(AbstractTokenizer tokenizer, PrefixTree<String,NERInfoSet> tree, Set<String> aliases, NERInfoSet list)
 	{
+		PrefixNode<String,NERInfoSet> node;
 		List<String> tokens;
 		String[] t;
 		
@@ -107,7 +104,15 @@ public class PrefixTreeGenerator implements DBPediaXML
 		{
 			tokens = tokenizer.tokenize(alias);
 			t = trimTokens(tokens);
-			if (t.length > 0) tree.set(t, list, s -> s);
+			
+			if (t.length > 0)
+			{
+				node = tree.add(t, 0, t.length, String::toString);
+				if (node.hasValue()) node.getValue().addCategories(list.getCategorySet());
+				else node.setValue(list);
+			}
+
+//			if (t.length > 0) tree.set(t, list, s -> s);
 		}
 	}
 	
@@ -155,22 +160,22 @@ public class PrefixTreeGenerator implements DBPediaXML
 		DBPediaInfoMap infoMap = gson.fromJson(new InputStreamReader(IOUtils.createXZBufferedInputStream(infoMapFile)), DBPediaInfoMap.class);
 		AbstractTokenizer tokenizer = NLPUtils.getTokenizer(TLanguage.ENGLISH);
 		PrefixTreeGenerator ptg = new PrefixTreeGenerator(typeMap, infoMap, DSUtils.toHashSet(DBPediaType.Person, DBPediaType.Mayor, DBPediaType.PersonFunction, DBPediaType.Name, DBPediaType.Place, DBPediaType.Organisation, DBPediaType.Website));
-		PrefixTree<String,NERInfoList> prefixTree = ptg.getPrefixTree(tokenizer);
+		PrefixTree<String,NERInfoSet> prefixTree = ptg.getPrefixTree(tokenizer);
 		ObjectOutputStream out = new ObjectOutputStream(IOUtils.createXZBufferedOutputStream(prefixTreeFile));
 		out.writeObject(prefixTree);
 		out.close();
 		
 		String[] array = "John Emory Werner Erhard 1 Revolutionary Communist Party Project X 42nd Infantry Division".split(" ");
 		
-		for (ObjectIntIntTriple<NERInfoList> t : prefixTree.getAll(array, 0, String::toString, true, true))
+		for (ObjectIntIntTriple<NERInfoSet> t : prefixTree.getAll(array, 0, String::toString, true, true))
 			System.out.println(t.o+" "+Joiner.join(array, " ", t.i1, t.i2+1));
 		
 //		String[] array = "The Chicago Bulls are an American professional basketball team . They are based in Chicago , Illinois , playing in the Central Division of the Eastern Conference in the National Basketball Association (NBA) . The team was founded on January 26 , 1966 . The Bulls play their home games at the United Center . The Bulls saw their greatest success during the 1990s . They are known for having one of the NBA 's greatest dynasties , winning six NBA championships between 1991 and 1998 with two three-peats . All six championship teams were led by Hall of Famers Michael Jordan , Scottie Pippen and coach Phil Jackson . The Bulls are the only NBA franchise to win multiple championships and never lose an NBA Finals in their history.".split(" ");
 //		ObjectInputStream in = new ObjectInputStream(IOUtils.createXZBufferedInputStream(prefixTreeFile));
 //		long st, et;
 //		@SuppressWarnings("unchecked")
-//		PrefixTree<String,NERInfoList> pre= (PrefixTree<String,NERInfoList>)in.readObject(); in.close();
-//		ObjectIntPair<NERInfoList> p;
+//		PrefixTree<String,NERInfoSet> pre= (PrefixTree<String,NERInfoSet>)in.readObject(); in.close();
+//		ObjectIntPair<NERInfoSet> p;
 //		int i, len = array.length;
 //		st = System.currentTimeMillis();
 //		for (i=0; i<len; i++)

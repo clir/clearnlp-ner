@@ -15,9 +15,13 @@
  */
 package edu.emory.clir.clearnlp.component.mode.ner;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
 import edu.emory.clir.clearnlp.collection.pair.ObjectIntPair;
@@ -29,8 +33,6 @@ import edu.emory.clir.clearnlp.component.utils.CFlag;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
 import edu.emory.clir.clearnlp.ner.BILOU;
-import edu.emory.clir.clearnlp.ner.NERInfoList;
-import edu.emory.clir.clearnlp.ner.NERTag;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
 
 /**
@@ -40,30 +42,56 @@ import edu.emory.clir.clearnlp.util.constant.StringConst;
 public class NERState extends AbstractTagState
 {
 	/** Information from prefix-tree. */
-	private List<ObjectIntIntTriple<NERInfoList>> info_list;
-	private PrefixTree<String,NERInfoList> prefix_tree;
+	private List<ObjectIntIntTriple<NERInfoSet>> info_list;
+	private PrefixTree<String,NERInfoSet> prefix_tree;
 	/** Tags retrieved from the prefix-tree. */
 	private String[] ambiguity_classes;
+	private List<Set<String>> brown_clusters;
 	
 //	====================================== INITIALIZATION ======================================
 	
-	public NERState(DEPTree tree, CFlag flag, PrefixTree<String,NERInfoList> prefixTree)
+	// temporary constructor
+	public NERState(DEPTree tree, CFlag flag, PrefixTree<String,NERInfoSet> dictionary)
 	{
 		super(tree, flag);
-		init(prefixTree);
+		prefix_tree = dictionary;
+		info_list = prefix_tree.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
+		ambiguity_classes = getAmbiguityClasses();
 	}
 	
-	public void init(PrefixTree<String,NERInfoList> prefixTree)
+	public NERState(DEPTree tree, CFlag flag, NERLexicon lexicon)
 	{
-		prefix_tree = prefixTree;
-		info_list   = prefixTree.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
+		super(tree, flag);
+		init(lexicon);
+	}
+	
+	public void init(NERLexicon lexicon)
+	{
+		prefix_tree = lexicon.getDictionary();
+		info_list = prefix_tree.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
 		ambiguity_classes = getAmbiguityClasses();
+		initBrownClusters(lexicon.getBrownCluster());
+	}
+	
+	private void initBrownClusters(PrefixTree<String,String[]> clusters)
+	{
+		brown_clusters = IntStream.range(0, t_size).mapToObj(i -> new HashSet<String>()).collect(Collectors.toList());
+		Set<String> set; int i;
+		
+		for (ObjectIntIntTriple<String[]> t : clusters.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false))
+		{
+			for (i=t.i1; i<=t.i2; i++)
+			{
+				set = brown_clusters.get(i);
+				for (String s : t.o) set.add(s);
+			}
+		}
 	}
 	
 	private String[] getAmbiguityClasses()
 	{
 		StringJoiner[] joiners = new StringJoiner[t_size];
-		ObjectIntIntTriple<NERInfoList> t;
+		ObjectIntIntTriple<NERInfoSet> t;
 		int i, j, size = info_list.size();
 		String tag;
 		
@@ -115,6 +143,14 @@ public class NERState extends AbstractTagState
 		return ambiguity_classes[node.getID()];
 	}
 	
+	public String[] getBrownClusters(DEPNode node)
+	{
+		Set<String> set = brown_clusters.get(node.getID());
+		String[] t = new String[set.size()];
+		set.toArray(t);
+		return t;
+	}
+	
 //	====================================== DICTIONARY ======================================
 
 	/** For training. */
@@ -124,10 +160,10 @@ public class NERState extends AbstractTagState
 		populateDictionary(goldMap);
 	}
 	
-	private IntObjectHashMap<ObjectIntIntTriple<NERInfoList>> populateDictionary(IntObjectHashMap<String> goldMap)
+	private IntObjectHashMap<ObjectIntIntTriple<NERInfoSet>> populateDictionary(IntObjectHashMap<String> goldMap)
 	{
-		IntObjectHashMap<ObjectIntIntTriple<NERInfoList>> dictMap = toNERInfoMap();
-		NERInfoList list;
+		IntObjectHashMap<ObjectIntIntTriple<NERInfoSet>> dictMap = toNERInfoMap();
+		NERInfoSet list;
 		int bIdx, eIdx;
 		
 		// add gold entries to the dictionary 
@@ -140,7 +176,7 @@ public class NERState extends AbstractTagState
 			list.addCorrectCount(1);
 		}
 		
-		for (ObjectIntPair<ObjectIntIntTriple<NERInfoList>> p : dictMap)
+		for (ObjectIntPair<ObjectIntIntTriple<NERInfoSet>> p : dictMap)
 			p.o.o.addCorrectCount(-1);
 		
 		return dictMap;
@@ -150,26 +186,26 @@ public class NERState extends AbstractTagState
 	 * @param beginIndex inclusive
 	 * @param endIndex exclusive
 	 */
-	static public <T>NERInfoList pick(PrefixTree<String,NERInfoList> dictionary, String tag, T[] array, int beginIndex, int endIndex, Function<T,String> f, int inc)
+	static public <T>NERInfoSet pick(PrefixTree<String,NERInfoSet> dictionary, String tag, T[] array, int beginIndex, int endIndex, Function<T,String> f, int inc)
 	{
-		PrefixNode<String,NERInfoList> node = dictionary.add(array, beginIndex, endIndex, f);
-		NERInfoList list = node.getValue();
+		PrefixNode<String,NERInfoSet> node = dictionary.add(array, beginIndex, endIndex, f);
+		NERInfoSet set = node.getValue();
 		
-		if (list == null)
+		if (set == null)
 		{
-			list = new NERInfoList();
-			node.setValue(list);
+			set = new NERInfoSet();
+			node.setValue(set);
 		}
 		
-		list.pick(tag, inc);
-		return list;
+		set.addCategory(tag);
+		return set;
 	}
 	
-	private IntObjectHashMap<ObjectIntIntTriple<NERInfoList>> toNERInfoMap()
+	private IntObjectHashMap<ObjectIntIntTriple<NERInfoSet>> toNERInfoMap()
 	{
-		IntObjectHashMap<ObjectIntIntTriple<NERInfoList>> map = new IntObjectHashMap<>();
+		IntObjectHashMap<ObjectIntIntTriple<NERInfoSet>> map = new IntObjectHashMap<>();
 		
-		for (ObjectIntIntTriple<NERInfoList> t : info_list)
+		for (ObjectIntIntTriple<NERInfoSet> t : info_list)
 			map.put(NEREval.getKey(t.i1, t.i2, t_size), t);
 
 		return map;
