@@ -17,6 +17,8 @@ package edu.emory.clir.clearnlp.component.mode.ner;
 
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
 import edu.emory.clir.clearnlp.collection.ngram.Bigram;
@@ -30,6 +32,8 @@ import edu.emory.clir.clearnlp.util.Joiner;
 import edu.emory.clir.clearnlp.util.Splitter;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
 import edu.emory.clir.clearnlp.util.lang.TLanguage;
+import edu.emory.clir.clearnlp.classification.vector.MultiWeightVector;
+
 
 /**
  * @since 3.0.3
@@ -40,6 +44,7 @@ public class NERLexicon implements Serializable
 	private static final long serialVersionUID = 3816259878124239839L;
 	private PrefixTree<String,NERInfoSet> ne_dictionary;
 	private PrefixTree<String,String[]> ne_cluster;
+	private Map<String, MultiWeightVector> word_embedding;
 	private Bigram<String,String> dict_counts;
 	private int dictionary_cutoff;
 	
@@ -53,8 +58,11 @@ public class NERLexicon implements Serializable
 		
 		if (configuration.getBrownClusterPath() != null) setBrownCluster(getBrownClusters(configuration.getBrownClusterPath()));
 		else setBrownCluster(new PrefixTree<>());
+		
+		if (configuration.getWordEmbeddingPath() != null) setWordEmbedding(getWordEmbeddings(configuration.getWordEmbeddingPath()));
+		else setWordEmbedding(new HashMap<>());
 	}
-	
+
 	public void collect(DEPTree tree)
 	{
 		DEPNode[] nodes = tree.toNodeArray();
@@ -108,6 +116,16 @@ public class NERLexicon implements Serializable
 		ne_cluster = cluster;
 	}
 	
+	public void setWordEmbedding(Map<String, MultiWeightVector> wordEmbedding)
+	{
+		word_embedding = wordEmbedding;
+	}
+
+	public Map<String, MultiWeightVector> getWordEmbedding()
+	{		
+		return word_embedding;
+	}
+	
 	public int getDictionaryCutoff()
 	{
 		return dictionary_cutoff;
@@ -156,5 +174,23 @@ public class NERLexicon implements Serializable
 	static public PrefixTree<String,String[]> getBrownClusters(String modelPath)
 	{
 		return getBrownClusters(NLPUtils.getObjectInputStream(modelPath));
+	}
+	
+	@SuppressWarnings("unchecked")
+	static public Map<String, MultiWeightVector> getWordEmbeddings(ObjectInputStream in)
+	{
+		BinUtils.LOG.info("Loading word embeddings.\n");
+		Map<String, MultiWeightVector> map = null;
+		try
+		{
+			map = (Map<String, MultiWeightVector>)in.readObject();
+		}
+		catch (Exception e) {e.printStackTrace();}
+		return map;
+	}
+	
+	static public Map<String, MultiWeightVector> getWordEmbeddings(String modelPath)
+	{
+		return getWordEmbeddings(NLPUtils.getObjectInputStream(modelPath));
 	}
 }
