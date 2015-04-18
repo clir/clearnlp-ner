@@ -30,6 +30,7 @@ import edu.emory.clir.clearnlp.util.constant.StringConst;
  */
 public class NERConfiguration extends AbstractConfiguration
 {
+	private String word_embedding_path;
 	private String brown_cluster_path;
 	private String dictionary_path;
 	private int dictionary_cutoff;
@@ -53,6 +54,7 @@ public class NERConfiguration extends AbstractConfiguration
 		
 		String dictPath  = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "dictionary_path"));
 		String brownPath = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "brown_cluster_path"));
+		String wordEmbeddingPath = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "word_embedding_path"));
 		int dictCutoff   = XmlUtils.getIntegerTextContent(XmlUtils.getFirstElementByTagName(eMode, "dictionary_cutoff"));
 		
 		if (dictPath .equals(StringConst.EMPTY)) dictPath = null;
@@ -60,9 +62,19 @@ public class NERConfiguration extends AbstractConfiguration
 		
 		setDictionaryPath(dictPath);
 		setBrownClusterPath(brownPath);
+		setWordEmbeddingPath(wordEmbeddingPath);
 		setDictionaryCutoff(dictCutoff);
 	}
 	
+	public void setWordEmbeddingPath(String path)
+	{
+		word_embedding_path = path;
+	}
+	public String getWordEmbeddingPath()
+	{
+		return word_embedding_path;
+	}
+
 	public String getDictionaryPath()
 	{
 		return dictionary_path;

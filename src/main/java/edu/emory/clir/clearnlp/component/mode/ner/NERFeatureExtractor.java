@@ -49,6 +49,9 @@ public class NERFeatureExtractor extends CommonFeatureExtractor<NERState>
 	{
 		switch (token.getField())
 		{
+		// please add word feature
+//		we,		// word embedding
+//		case we : return state.getWordEmbeddings(node);
 		case c : return state.getBrownClusters(node);
 		default: return super.getFeatures(token, state, node);
 		}
