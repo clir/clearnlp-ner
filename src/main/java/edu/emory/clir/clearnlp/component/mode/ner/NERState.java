@@ -113,15 +113,17 @@ public class NERState extends AbstractTagState
 	
 	private void initWordEmbedding() throws IOException
 	{
-		String filename = "model-1750000000.LEARNING_RATE=1e-09.EMBEDDING_LEARNING_RATE=1e-06.EMBEDDING_SIZE=200.txt";
-		Map<String, MultiWeightVector> newMap = getWordEmbedding(new FileInputStream(filename));
+		
+		// may need to implement normalization
+		String filename = "hlbl_reps_clean_1.rcv1.clean.tokenized-CoNLL03.case-intact.txt"; // i believe this is the one to try fir
+		Map<String, MultiWeightVector> newMap = getWordEmbedding(new FileInputStream(filename), .3f, .3f);
 		ObjectOutputStream out = IOUtils.createObjectXZBufferedOutputStream(filename+".xz");
 		out.writeObject(newMap);
 		out.close();
 		
 	}
 	
-	public static Map<String, MultiWeightVector> getWordEmbedding(InputStream in) throws IOException
+	public static Map<String, MultiWeightVector> getWordEmbedding(InputStream in, float globalNormalizationFactor, float localNormalizationFactor) throws IOException
 	{
 		BufferedReader reader = IOUtils.createBufferedReader(in);
 		// trying out the koloboke maps
@@ -129,7 +131,9 @@ public class NERState extends AbstractTagState
 		List<String[]> instances = new ArrayList<>();
 		String line, word;
 		MultiWeightVector vector;
-		int i,j;
+		int i,j, maxDimensions = 0;
+		float localMax, globalMax = 0;
+
 		while((line = reader.readLine()) != null)
 			instances.add(Splitter.splitTabs(line));
 		
@@ -137,14 +141,27 @@ public class NERState extends AbstractTagState
 		{
 			String[] splitLine = instances.get(i);
 			word = splitLine[0];
+			maxDimensions = Math.max(splitLine.length, maxDimensions);
 			vector = new MultiWeightVector();
+			localMax = 0;
 			for (j=1;j<splitLine.length; j++) {
-				vector.add(j-1, Float.parseFloat(splitLine[j]));
+				float weightValue = Float.parseFloat(splitLine[j]);
+				vector.add(j-1, weightValue);
+				localMax = Math.max(Math.abs(localMax), Math.abs(weightValue));
 			}
 			map.put(word,vector);
+			globalMax = Math.max(Math.abs(globalMax), Math.abs(localMax));
+			float p = localMax;
+			for (MultiWeightVector v : map.values()) {
+				IntStream.range(0,v.size()).forEach(r -> {v.multiply(r,v.get(r)*p/localNormalizationFactor);});
+			}
 		}
-		return map;
+		float g = globalMax;
+		for (MultiWeightVector v : map.values()) {
+			IntStream.range(0,v.size()).forEach(r -> {v.multiply(r,v.get(r)/g*globalNormalizationFactor);});
+		}
 		
+		return map;
 	}
 	
 	static public PrefixTree<String,String[]> getBrownClusters(InputStream in) throws IOException
