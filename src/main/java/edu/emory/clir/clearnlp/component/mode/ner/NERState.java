@@ -76,14 +76,14 @@ public class NERState extends AbstractTagState
 	private void initBrownClusters(PrefixTree<String,String[]> clusters)
 	{
 		brown_clusters = IntStream.range(0, t_size).mapToObj(i -> new HashSet<String>()).collect(Collectors.toList());
-		Set<String> set; int i;
+		Set<String> set; int i, j;
 		
 		for (ObjectIntIntTriple<String[]> t : clusters.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false))
 		{
 			for (i=t.i1; i<=t.i2; i++)
 			{
 				set = brown_clusters.get(i);
-				for (String s : t.o) set.add(s);
+				for (j=t.o.length-1; j>=0; j--) set.add(t.o[j]);
 			}
 		}
 	}
