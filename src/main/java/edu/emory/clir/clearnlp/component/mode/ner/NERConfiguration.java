@@ -16,13 +16,16 @@
 package edu.emory.clir.clearnlp.component.mode.ner;
 
 import java.io.InputStream;
+import java.util.Set;
 
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import edu.emory.clir.clearnlp.component.configuration.AbstractConfiguration;
 import edu.emory.clir.clearnlp.component.utils.NLPMode;
+import edu.emory.clir.clearnlp.util.DSUtils;
+import edu.emory.clir.clearnlp.util.Splitter;
 import edu.emory.clir.clearnlp.util.XmlUtils;
-import edu.emory.clir.clearnlp.util.constant.StringConst;
 
 /**
  * @since 3.0.3
@@ -30,10 +33,10 @@ import edu.emory.clir.clearnlp.util.constant.StringConst;
  */
 public class NERConfiguration extends AbstractConfiguration
 {
-	private String word_embedding_path;
-	private String brown_cluster_path;
+	private String[] cluster_paths;
 	private String dictionary_path;
-	private int dictionary_cutoff;
+	private int collect_cutoff;
+	private Set<String> collect_labels;
 	
 //	============================== Initialization ==============================
 	
@@ -52,32 +55,45 @@ public class NERConfiguration extends AbstractConfiguration
 	{
 		Element eMode = getModeElement();
 		
-		String dictPath  = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "dictionary_path"));
-		String brownPath = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "brown_cluster_path"));
-		String wordEmbeddingPath = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "word_embedding_path"));
-		int dictCutoff   = XmlUtils.getIntegerTextContent(XmlUtils.getFirstElementByTagName(eMode, "dictionary_cutoff"));
+		String dictPath = getPath("dictionary_path");
+		String collectLabels = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "collect_labels"));
+		int collectCutoff = XmlUtils.getIntegerTextContent(XmlUtils.getFirstElementByTagName(eMode, "collect_cutoff"));
 		
-		if (dictPath .equals(StringConst.EMPTY)) dictPath = null;
-		if (brownPath.equals(StringConst.EMPTY)) dictPath = null;
-		
+		initClusterPaths();
 		setDictionaryPath(dictPath);
-		setBrownClusterPath(brownPath);
-		setWordEmbeddingPath(wordEmbeddingPath);
-		setDictionaryCutoff(dictCutoff);
+		setCollectCutoff(collectCutoff);
+		setCollectLabelSet(DSUtils.toHashSet(Splitter.splitCommas(collectLabels)));
 	}
 	
-	public void setWordEmbeddingPath(String path)
+	private void initClusterPaths()
 	{
-		word_embedding_path = path;
+		Element eCluster = getFirstElement("cluster_paths");
+		NodeList list = eCluster.getElementsByTagName("cluster_path");
+		int i, len = list.getLength();
+		cluster_paths = new String[len];
+		
+		for (i=0; i<len; i++)
+			cluster_paths[i] = XmlUtils.getTrimmedTextContent((Element)list.item(i));
 	}
-	public String getWordEmbeddingPath()
-	{
-		return word_embedding_path;
-	}
-
+	
 	public String getDictionaryPath()
 	{
 		return dictionary_path;
+	}
+	
+	public String[] getClusterPaths()
+	{
+		return cluster_paths;
+	}
+	
+	public int getCollectCutoff()
+	{
+		return collect_cutoff;
+	}
+	
+	public Set<String> getCollectLabelSet()
+	{
+		return collect_labels;
 	}
 	
 	public void setDictionaryPath(String path)
@@ -85,23 +101,18 @@ public class NERConfiguration extends AbstractConfiguration
 		dictionary_path = path;
 	}
 	
-	public String getBrownClusterPath()
+	public void setClusterPaths(String[] paths)
 	{
-		return brown_cluster_path;
-	}
-	
-	public void setBrownClusterPath(String path)
-	{
-		brown_cluster_path = path;
-	}
-	
-	public int getDictionaryCutoff()
-	{
-		return dictionary_cutoff;
+		cluster_paths = paths;
 	}
 
-	public void setDictionaryCutoff(int dictionaryCutoff)
+	public void setCollectCutoff(int dictionaryCutoff)
 	{
-		dictionary_cutoff = dictionaryCutoff;
+		collect_cutoff = dictionaryCutoff;
+	}
+	
+	public void setCollectLabelSet(Set<String> set)
+	{
+		collect_labels = set;
 	}
 }

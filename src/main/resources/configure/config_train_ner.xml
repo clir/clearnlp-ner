@@ -11,9 +11,15 @@
 
 	<ner>
         <trainer algorithm="adagrad" type="svm" labelCutoff="0" featureCutoff="0" alpha="0.02" rho="0.1" bias="0" average="false"/>
-        <brown_cluster_path>brown-rcv1.clean.tokenized-CoNLL03.txt-c1000-freq1.txt.xz</brown_cluster_path>
         <dictionary_path>general-en-ner-dict.xz</dictionary_path>
-        <dictionary_cutoff>5</dictionary_cutoff>
+        <collect_labels>MISC</collect_labels>
+        <collect_cutoff>5</collect_cutoff>
         <bootstraps>true</bootstraps>
+
+        <cluster_paths>
+        	<cluster_path>brown-rcv1.clean.tokenized-CoNLL03.txt-c1000-freq1.txt.xz</cluster_path>
+        	<cluster_path>model-2030000000.LEARNING_RATE=1e-09.EMBEDDING_LEARNING_RATE=1e-06.EMBEDDING_SIZE=100.txt.xz</cluster_path>
+        	<cluster_path>hlbl_reps_clean_1.rcv1.clean.tokenized-CoNLL03.case-intact.txt.xz</cluster_path>
+        </cluster_paths>
     </ner>
 </configuration>

@@ -27,6 +27,8 @@ public interface NERTag
 	String PERSON       = "PER";
 	String ORGANIZATION = "ORG";
 	String LOCATION     = "LOC";
+	String WORK         = "WORK";
+	String EVENT        = "EVENT";
 	
 	/**
 	 * @param tag e.g., "B-ORG".
@@ -58,6 +60,14 @@ public interface NERTag
 		case Place			: return LOCATION;
 		case Organisation	: return ORGANIZATION;
 		case Website		: return ORGANIZATION;
+		case Artwork        : return WORK;
+		case MusicalWork    : return WORK;
+		case WrittenWork    : return WORK;
+		case TelevisionShow : return WORK;
+		case Film           : return WORK;
+		case Competition    : return EVENT;
+		case SocietalEvent  : return EVENT;
+		
 		default: return type.toString();
 		}
 	}

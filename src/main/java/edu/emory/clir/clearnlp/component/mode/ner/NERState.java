@@ -15,28 +15,12 @@
  */
 package edu.emory.clir.clearnlp.component.mode.ner;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import net.openhft.koloboke.collect.map.hash.HashObjObjMap;
-import net.openhft.koloboke.collect.map.hash.HashObjObjMapFactory;
-import net.openhft.koloboke.collect.map.hash.HashObjObjMaps;
-import edu.emory.clir.clearnlp.classification.vector.MultiWeightVector;
 import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
 import edu.emory.clir.clearnlp.collection.pair.ObjectIntPair;
 import edu.emory.clir.clearnlp.collection.tree.PrefixNode;
@@ -46,10 +30,7 @@ import edu.emory.clir.clearnlp.component.state.AbstractTagState;
 import edu.emory.clir.clearnlp.component.utils.CFlag;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
-import edu.emory.clir.clearnlp.feature.AbstractFeatureExtractor;
 import edu.emory.clir.clearnlp.ner.BILOU;
-import edu.emory.clir.clearnlp.util.IOUtils;
-import edu.emory.clir.clearnlp.util.Splitter;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
 
 /**
@@ -60,11 +41,9 @@ public class NERState extends AbstractTagState
 {
 	/** Information from prefix-tree. */
 	private List<ObjectIntIntTriple<NERInfoSet>> info_list;
-	private PrefixTree<String,NERInfoSet> prefix_tree;
-	/** Tags retrieved from the prefix-tree. */
+	private PrefixTree<String,NERInfoSet> ner_dictionary;
+	private List<Map<String,Set<String>>> cluster_list;
 	private String[] ambiguity_classes;
-	private List<Set<String>> brown_clusters;
-	private Map<String, MultiWeightVector> word_embeddings;
 	
 //	====================================== INITIALIZATION ======================================
 	
@@ -72,8 +51,8 @@ public class NERState extends AbstractTagState
 	public NERState(DEPTree tree, CFlag flag, PrefixTree<String,NERInfoSet> dictionary)
 	{
 		super(tree, flag);
-		prefix_tree = dictionary;
-		info_list = prefix_tree.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
+		ner_dictionary = dictionary;
+		info_list = ner_dictionary.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
 		ambiguity_classes = getAmbiguityClasses();
 	}
 	
@@ -85,112 +64,12 @@ public class NERState extends AbstractTagState
 	
 	public void init(NERLexicon lexicon)
 	{
-		prefix_tree = lexicon.getDictionary();
-		info_list = prefix_tree.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
+		ner_dictionary = lexicon.getDictionary();
+		cluster_list = lexicon.getClusterList();
+		info_list = ner_dictionary.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
 		ambiguity_classes = getAmbiguityClasses();
-		initBrownClusters(lexicon.getBrownCluster());
-		try {
-			initWordEmbedding();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
-	
-	private void initBrownClusters(PrefixTree<String,String[]> clusters)
-	{
-		brown_clusters = IntStream.range(0, t_size).mapToObj(i -> new HashSet<String>()).collect(Collectors.toList());
-		Set<String> set; int i;
-		
-		for (ObjectIntIntTriple<String[]> t : clusters.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false))
-		{
-			for (i=t.i1; i<=t.i2; i++)
-			{
-				set = brown_clusters.get(i);
-				for (String s : t.o) set.add(s);
-			}
-		}
-	}
-	
-	private void initWordEmbedding() throws IOException
-	{
-		
-		// may need to implement normalization
-		String filename = "hlbl_reps_clean_1.rcv1.clean.tokenized-CoNLL03.case-intact.txt"; // i believe this is the one to try fir
-		Map<String, MultiWeightVector> newMap = getWordEmbedding(new FileInputStream(filename), .3f, .3f);
-		ObjectOutputStream out = IOUtils.createObjectXZBufferedOutputStream(filename+".xz");
-		out.writeObject(newMap);
-		out.close();
-		
-	}
-	
-	public static Map<String, MultiWeightVector> getWordEmbedding(InputStream in, float globalNormalizationFactor, float localNormalizationFactor) throws IOException
-	{
-		BufferedReader reader = IOUtils.createBufferedReader(in);
-		// trying out the koloboke maps
-		Map<String, MultiWeightVector> map = HashObjObjMaps.newMutableMap();
-		List<String[]> instances = new ArrayList<>();
-		String line, word;
-		MultiWeightVector vector;
-		int i,j, maxDimensions = 0;
-		float localMax, globalMax = 0;
 
-		while((line = reader.readLine()) != null)
-			instances.add(Splitter.splitTabs(line));
-		
-		for (i=0;i<instances.size();i++)
-		{
-			String[] splitLine = instances.get(i);
-			word = splitLine[0];
-			maxDimensions = Math.max(splitLine.length, maxDimensions);
-			vector = new MultiWeightVector();
-			localMax = 0;
-			for (j=1;j<splitLine.length; j++) {
-				float weightValue = Float.parseFloat(splitLine[j]);
-				vector.add(j-1, weightValue);
-				localMax = Math.max(Math.abs(localMax), Math.abs(weightValue));
-			}
-			map.put(word,vector);
-			globalMax = Math.max(Math.abs(globalMax), Math.abs(localMax));
-			float p = localMax;
-			for (MultiWeightVector v : map.values()) {
-				IntStream.range(0,v.size()).forEach(r -> {v.multiply(r,v.get(r)*p/localNormalizationFactor);});
-			}
-		}
-		float g = globalMax;
-		for (MultiWeightVector v : map.values()) {
-			IntStream.range(0,v.size()).forEach(r -> {v.multiply(r,v.get(r)/g*globalNormalizationFactor);});
-		}
-		
-		return map;
-	}
-	
-	static public PrefixTree<String,String[]> getBrownClusters(InputStream in) throws IOException
-	{
-		BufferedReader reader = IOUtils.createBufferedReader(in);
-		PrefixTree<String,String[]> tree = new PrefixTree<>();
-		List<String[]> instances = new ArrayList<>();
-		String[] tokens, v;
-		String line;
-		int i, len;
-		
-		while ((line = reader.readLine()) != null)
-			instances.add(Splitter.splitTabs(line));
-		
-		for (String[] t : instances)
-		{
-			len = t[0].length();
-			v = new String[len];
-	
-			for (i=0; i<len; i++)
-				v[i] = t[0].substring(0,i+1);
-			
-			tokens = Splitter.splitHyphens(t[1]);
-			tree.set(tokens, v, String::toString);
-		}
-		
-		return tree;
-	}
-	
 	private String[] getAmbiguityClasses()
 	{
 		StringJoiner[] joiners = new StringJoiner[t_size];
@@ -246,18 +125,13 @@ public class NERState extends AbstractTagState
 		return ambiguity_classes[node.getID()];
 	}
 	
-	public String[] getBrownClusters(DEPNode node)
+	public String[] getClusterFeatures(DEPNode node, int type)
 	{
-		Set<String> set = brown_clusters.get(node.getID());
+		Set<String> set = cluster_list.get(type).get(node.getWordForm());
+		if (set == null) return null;
 		String[] t = new String[set.size()];
 		set.toArray(t);
 		return t;
-	}
-	
-	public MultiWeightVector getWordEmbeddings(DEPNode node)
-	{
-		return word_embeddings.get(node.getLemma());
-		
 	}
 	
 //	====================================== DICTIONARY ======================================
@@ -281,7 +155,7 @@ public class NERState extends AbstractTagState
 			dictMap.remove(p.i);
 			bIdx = p.i / t_size;
 			eIdx = p.i % t_size;
-			list = pick(prefix_tree, p.o, d_tree.toNodeArray(), bIdx, eIdx+1, DEPNode::getWordForm, 1);
+			list = pick(ner_dictionary, p.o, d_tree.toNodeArray(), bIdx, eIdx+1, DEPNode::getWordForm, 1);
 			list.addCorrectCount(1);
 		}
 		

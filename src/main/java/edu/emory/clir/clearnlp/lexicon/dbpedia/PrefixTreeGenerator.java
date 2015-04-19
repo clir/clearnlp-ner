@@ -141,11 +141,13 @@ public class PrefixTreeGenerator implements DBPediaXML
 			}
 		}
 		
+		
 		if (tokens.size() == 1 && StringUtils.containsDigitOnly(tokens.get(0)))
 			tokens.clear();
 		
-		String[] t = new String[tokens.size()];
-		tokens.toArray(t);
+		int len = tokens.size();
+		String[] t = new String[len];
+		for (i=0; i<len; i++) t[i] = tokens.get(i);
 		return t;
 	}
 	
@@ -159,7 +161,7 @@ public class PrefixTreeGenerator implements DBPediaXML
 		DBPediaTypeMap typeMap = gson.fromJson(new InputStreamReader(IOUtils.createXZBufferedInputStream(typeMapFile)), DBPediaTypeMap.class);
 		DBPediaInfoMap infoMap = gson.fromJson(new InputStreamReader(IOUtils.createXZBufferedInputStream(infoMapFile)), DBPediaInfoMap.class);
 		AbstractTokenizer tokenizer = NLPUtils.getTokenizer(TLanguage.ENGLISH);
-		PrefixTreeGenerator ptg = new PrefixTreeGenerator(typeMap, infoMap, DSUtils.toHashSet(DBPediaType.Person, DBPediaType.Mayor, DBPediaType.PersonFunction, DBPediaType.Name, DBPediaType.Place, DBPediaType.Organisation, DBPediaType.Website));
+		PrefixTreeGenerator ptg = new PrefixTreeGenerator(typeMap, infoMap, DSUtils.toHashSet(DBPediaType.Person, DBPediaType.Mayor, DBPediaType.PersonFunction, DBPediaType.Name, DBPediaType.Place, DBPediaType.Organisation, DBPediaType.Website, DBPediaType.Competition, DBPediaType.SocietalEvent, DBPediaType.Artwork, DBPediaType.Film, DBPediaType.MusicalWork, DBPediaType.WrittenWork, DBPediaType.TelevisionShow));
 		PrefixTree<String,NERInfoSet> prefixTree = ptg.getPrefixTree(tokenizer);
 		ObjectOutputStream out = new ObjectOutputStream(IOUtils.createXZBufferedOutputStream(prefixTreeFile));
 		out.writeObject(prefixTree);

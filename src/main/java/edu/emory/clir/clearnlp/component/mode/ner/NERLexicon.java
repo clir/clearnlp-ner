@@ -17,8 +17,11 @@ package edu.emory.clir.clearnlp.component.mode.ner;
 
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
 import edu.emory.clir.clearnlp.collection.ngram.Bigram;
@@ -32,7 +35,6 @@ import edu.emory.clir.clearnlp.util.Joiner;
 import edu.emory.clir.clearnlp.util.Splitter;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
 import edu.emory.clir.clearnlp.util.lang.TLanguage;
-import edu.emory.clir.clearnlp.classification.vector.MultiWeightVector;
 
 
 /**
@@ -42,25 +44,24 @@ import edu.emory.clir.clearnlp.classification.vector.MultiWeightVector;
 public class NERLexicon implements Serializable
 {
 	private static final long serialVersionUID = 3816259878124239839L;
-	private PrefixTree<String,NERInfoSet> ne_dictionary;
-	private PrefixTree<String,String[]> ne_cluster;
-	private Map<String, MultiWeightVector> word_embedding;
+	private PrefixTree<String,NERInfoSet> ner_dictionary;
+	private List<Map<String,Set<String>>> cluster_list;
 	private Bigram<String,String> dict_counts;
-	private int dictionary_cutoff;
+	private Set<String> collect_labels;
+	private int collect_cutoff;
 	
 	public NERLexicon(NERConfiguration configuration)
 	{
-		setDictionaryCutoff(configuration.getDictionaryCutoff());
+		setDictionaryCutoff(configuration.getCollectCutoff());
+		collect_labels = configuration.getCollectLabelSet();
+		cluster_list = new ArrayList<>();
 		dict_counts = new Bigram<>();
 		
-		if (configuration.getDictionaryPath() != null) setDictionary(getNEDictionary(configuration.getLanguage(), configuration.getDictionaryPath()));
+		if (configuration.getDictionaryPath() != null) setDictionary(getNERDictionary(configuration.getLanguage(), configuration.getDictionaryPath()));
 		else setDictionary(new PrefixTree<>());
 		
-		if (configuration.getBrownClusterPath() != null) setBrownCluster(getBrownClusters(configuration.getBrownClusterPath()));
-		else setBrownCluster(new PrefixTree<>());
-		
-		if (configuration.getWordEmbeddingPath() != null) setWordEmbedding(getWordEmbeddings(configuration.getWordEmbeddingPath()));
-		else setWordEmbedding(new HashMap<>());
+		for (String path : configuration.getClusterPaths())
+			addCluster(getClusters(path));
 	}
 
 	public void collect(DEPTree tree)
@@ -73,7 +74,7 @@ public class NERLexicon implements Serializable
 		{
 			bIdx = p.i / size;
 			eIdx = p.i % size;
-			if (p.o.equals("MISC"))
+			if (collect_labels.contains(p.o))
 				dict_counts.add(p.o, Joiner.join(nodes, StringConst.SPACE, bIdx, eIdx+1, DEPNode::getWordForm));
 		}
 	}
@@ -85,10 +86,10 @@ public class NERLexicon implements Serializable
 		
 		for (String type : dict_counts.getBigramSet())
 		{
-			for (ObjectIntPair<String> p : dict_counts.toList(type, dictionary_cutoff))
+			for (ObjectIntPair<String> p : dict_counts.toList(type, collect_cutoff))
 			{
 				array = Splitter.splitSpace(p.o);
-				set = NERState.pick(ne_dictionary, type, array, 0, array.length, String::toString, p.i);
+				set = NERState.pick(ner_dictionary, type, array, 0, array.length, String::toString, p.i);
 				set.addCorrectCount(p.i);
 			}
 		}
@@ -98,42 +99,37 @@ public class NERLexicon implements Serializable
 	
 	public PrefixTree<String,NERInfoSet> getDictionary()
 	{
-		return ne_dictionary;
+		return ner_dictionary;
 	}
 	
 	public void setDictionary(PrefixTree<String,NERInfoSet> dictionary)
 	{
-		ne_dictionary = dictionary;
+		ner_dictionary = dictionary;
 	}
 	
-	public PrefixTree<String,String[]> getBrownCluster()
+	public List<Map<String,Set<String>>> getClusterList()
 	{
-		return ne_cluster;
+		return cluster_list;
 	}
 	
-	public void setBrownCluster(PrefixTree<String,String[]> cluster)
+	public Map<String,Set<String>> getClusterMap(int index)
 	{
-		ne_cluster = cluster;
+		return cluster_list.get(index);
 	}
 	
-	public void setWordEmbedding(Map<String, MultiWeightVector> wordEmbedding)
+	public void addCluster(Map<String,Set<String>> cluster)
 	{
-		word_embedding = wordEmbedding;
-	}
-
-	public Map<String, MultiWeightVector> getWordEmbedding()
-	{		
-		return word_embedding;
+		cluster_list.add(cluster);
 	}
 	
 	public int getDictionaryCutoff()
 	{
-		return dictionary_cutoff;
+		return collect_cutoff;
 	}
 	
 	public void setDictionaryCutoff(int cutoff)
 	{
-		dictionary_cutoff = cutoff;
+		collect_cutoff = cutoff;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -151,46 +147,28 @@ public class NERLexicon implements Serializable
 		return tree;
 	}
 	
-	static public PrefixTree<String,NERInfoSet> getNEDictionary(TLanguage language, String modelPath)
+	static public PrefixTree<String,NERInfoSet> getNERDictionary(TLanguage language, String modelPath)
 	{
 		return getNEDictionary(language, NLPUtils.getObjectInputStream(modelPath));
 	}
 	
 	@SuppressWarnings("unchecked")
-	static public PrefixTree<String,String[]> getBrownClusters(ObjectInputStream in)
+	static public Map<String,Set<String>> getClusters(ObjectInputStream in)
 	{
-		BinUtils.LOG.info("Loading brown clusters.\n");
-		PrefixTree<String,String[]> tree = null;
+		BinUtils.LOG.info("Loading distributional semantics.\n");
+		Map<String,Set<String>> map = null;
 		
 		try
 		{
-			tree = (PrefixTree<String,String[]>)in.readObject();
+			map = (HashMap<String,Set<String>>)in.readObject();
 		}
 		catch (Exception e) {e.printStackTrace();}
 		
-		return tree;
-	}
-	
-	static public PrefixTree<String,String[]> getBrownClusters(String modelPath)
-	{
-		return getBrownClusters(NLPUtils.getObjectInputStream(modelPath));
-	}
-	
-	@SuppressWarnings("unchecked")
-	static public Map<String, MultiWeightVector> getWordEmbeddings(ObjectInputStream in)
-	{
-		BinUtils.LOG.info("Loading word embeddings.\n");
-		Map<String, MultiWeightVector> map = null;
-		try
-		{
-			map = (Map<String, MultiWeightVector>)in.readObject();
-		}
-		catch (Exception e) {e.printStackTrace();}
 		return map;
 	}
 	
-	static public Map<String, MultiWeightVector> getWordEmbeddings(String modelPath)
+	static public Map<String,Set<String>> getClusters(String modelPath)
 	{
-		return getWordEmbeddings(NLPUtils.getObjectInputStream(modelPath));
+		return getClusters(NLPUtils.getObjectInputStream(modelPath));
 	}
 }

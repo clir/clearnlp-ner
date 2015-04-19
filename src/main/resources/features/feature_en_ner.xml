@@ -1,50 +1,52 @@
 <feature_template>
-	<feature f0="i:f2" />
-	<feature f0="i:f3" />
-	<feature f0="i:f4" />
-	<feature f0="i:m" />
+	<feature f0="i:f2"/>
+	<feature f0="i:f3"/>
+	<feature f0="i:f4"/>
+	<feature f0="i:m"/>
 
-	<feature f0="i-1:f3" />
-	<feature f0="i-2:f3" />
-	<feature f0="i+1:f3" />
-	<feature f0="i+2:f3" />
-	<feature f0="i-1:f4" />
-	<feature f0="i+1:f4" />
+	<feature f0="i-1:f3"/>
+	<feature f0="i-2:f3"/>
+	<feature f0="i+1:f3"/>
+	<feature f0="i+2:f3"/>
+	<feature f0="i-1:f4"/>
+	<feature f0="i+1:f4"/>
 
-	<feature f0="i:p" />
-	<feature f0="i-1:p" />
-	<feature f0="i+1:p" />
+	<feature f0="i:p"/>
+	<feature f0="i-1:p"/>
+	<feature f0="i+1:p"/>
 
-	<feature f0="i:a" />
-	<feature f0="i-1:a" />
-	<feature f0="i+1:a" />
+	<feature f0="i:a"/>
+	<feature f0="i-1:a"/>
+	<feature f0="i+1:a"/>
 
-	<feature f0="i:orth" />
-	<feature f0="i-1:f2" />
-	<feature f0="i+1:orth" />
-	<feature f0="i+1:f2" />
-	<feature f0="i:sf3" />
-	<feature f0="i:sf1" />
-	<feature f0="i:sf3" f1="i:f3" />
-	<feature f0="i:sf3" f1="i-1:n" f2="i:p" />
-	<feature f0="i-1:sf3" f1="i:f3" />
-	<feature f0="i-1:sf3" f1="i-1:n" f2="i-1:p" />
-	<feature f0="i+1:pf3" />
-	<feature f0="i:f3" f1="i+1:f3" />
-	<feature f0="i-1:f3" f1="i:f3" />
-	<feature f0="i+1:f3" f1="i+2:f3" />
-	<feature f0="i:f3" f1="i:p" />
-	<feature f0="i+1:f3" f1="i:p" />
-	<feature f0="i-1:p" f1="i-2:p" />
-	<feature f0="i-1:n" />
-	<feature f0="i-2:n" />
-	<feature f0="i-3:n" f1="i-2:n" f2="i+1:a" />
-	<feature f0="i+1:a" f1="i+2:a" />
-	<feature f0="i+1:a" f1="i+2:a" f2="i+3:a" />
+	<feature f0="i:orth"/>
+	<feature f0="i-1:f2"/>
+	<feature f0="i+1:orth"/>
+	<feature f0="i+1:f2"/>
+	<feature f0="i:sf3"/>
+	<feature f0="i:sf1"/>
+	<feature f0="i:sf3" f1="i:f3"/>
+	<feature f0="i:sf3" f1="i-1:n" f2="i:p"/>
+	<feature f0="i-1:sf3" f1="i:f3"/>
+	<feature f0="i-1:sf3" f1="i-1:n" f2="i-1:p"/>
+	<feature f0="i+1:pf3"/>
+	<feature f0="i:f3" f1="i+1:f3"/>
+	<feature f0="i-1:f3" f1="i:f3"/>
+	<feature f0="i+1:f3" f1="i+2:f3"/>
+	<feature f0="i:f3" f1="i:p"/>
+	<feature f0="i+1:f3" f1="i:p"/>
+	<feature f0="i-1:p" f1="i-2:p"/>
+	<feature f0="i-1:n"/>
+	<feature f0="i-2:n"/>
+	<feature f0="i-3:n" f1="i-2:n" f2="i+1:a"/>
+	<feature f0="i+1:a" f1="i+2:a"/>
+	<feature f0="i+1:a" f1="i+2:a" f2="i+3:a"/>
 
-	<feature f0="i-1:c" visible="false"/>
-	<feature f0="i:c" />
-	<feature f0="i+1:c" />
-	<feature f0="i+2:c" />
+	<feature f0="i:ct0"/>
+	<feature f0="i+1:ct0"/>
+	<feature f0="i+2:ct0"/>
+	
+	<feature f0="i:ct1"/>
+	<feature f0="i:ct2"/>
 	
 </feature_template>
