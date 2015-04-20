@@ -10,7 +10,7 @@ import edu.emory.clir.clearnlp.classification.vector.SparseFeatureVector;
 abstract public class AbstractFuzzyCmeans extends AbstractOnlineTrainer
 {
 	
-	protected List<SparseFeatureVector> points;
+	protected List<SparseFeatureVector> documents;
 	protected List<KCluster> clusters;
 	protected List<SparseFeatureVector> centroids;
 	protected boolean allConverged;
@@ -40,11 +40,11 @@ abstract public class AbstractFuzzyCmeans extends AbstractOnlineTrainer
 	}
 
 	public List<SparseFeatureVector> getPoints() {
-		return points;
+		return documents;
 	}
 
 	public void setPoints(List<SparseFeatureVector> points) {
-		this.points = points;
+		this.documents = points;
 	}
 
 	public List<KCluster> getClusters() {
@@ -54,12 +54,24 @@ abstract public class AbstractFuzzyCmeans extends AbstractOnlineTrainer
 	public void setClusters(List<KCluster> clusters) {
 		this.clusters = clusters;
 	}
+	
+	public List<SparseFeatureVector> getCentroids()
+	{
+		return centroids;
+	}
+	
+	public List<SparseFeatureVector> setCentroids()
+	{
+		return centroids;
+	}
+	
 	public boolean checkAllConverged()
 	{
 		boolean converged = true;
 		for (KCluster cluster : clusters)
 		{
-			if(!cluster.computeConvergence(points, 1)) // who knows, if any not converged then set all converged to false
+			cluster.updateCentroid(documents, 1);
+			if(!cluster.isConverged()) // who knows, if any not converged then set all converged to false
 			{
 				converged = false;
 			}

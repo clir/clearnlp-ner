@@ -1,10 +1,16 @@
 package edu.emory.clir.clearnlp.component;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import org.apache.mahout.clustering.Cluster;
 import org.apache.mahout.clustering.display.ClustersFilterTest;
+import org.apache.mahout.clustering.fuzzykmeans.SoftCluster;
 
 import edu.emory.clir.clearnlp.classification.configuration.AbstractTrainerConfiguration;
 import edu.emory.clir.clearnlp.classification.instance.IntInstance;
@@ -16,6 +22,8 @@ import edu.emory.clir.clearnlp.classification.vector.MultiWeightVector;
 import edu.emory.clir.clearnlp.classification.vector.SparseFeatureVector;
 import edu.emory.clir.clearnlp.classification.vector.StringFeatureVector;
 import edu.emory.clir.clearnlp.collection.list.DoubleArrayList;
+import edu.emory.clir.clearnlp.collection.list.IntArrayList;
+import edu.emory.clir.clearnlp.collection.pair.DoubleIntPair;
 import edu.emory.clir.clearnlp.component.evaluation.AbstractEval;
 import edu.emory.clir.clearnlp.component.state.AbstractState;
 import edu.emory.clir.clearnlp.feature.AbstractFeatureExtractor;
@@ -28,51 +36,61 @@ public class FuzzyCmeans extends AbstractFuzzyCmeans
 	private static final double MINIMAL_VALUE = 0.0000000001;
 	private double m = 2.0;
 
-//	public FuzzyCmeans(SparseModel model, int labelCutoff, int featureCutoff, double fuzziness, int num_clusters, long seed) {
-//		super(model, labelCutoff, featureCutoff, fuzziness, num_clusters, seed);
-//		m = fuzziness;
-//	}
-	public FuzzyCmeans(SparseModel model, int labelCutoff, int featureCutoff, double fuzziness, int num_clusters, long seed) {
+	public FuzzyCmeans(SparseModel model, int labelCutoff, int featureCutoff, double fuzziness, int num_clusters, long seed, List<KCluster> prior) {
 		super(model, fuzziness, num_clusters, seed);
 		m = fuzziness;
-		initRandomClusters();
+		initClusters(prior);
 	}
 
-	private void initRandomClusters()
+	private void initClusters()
 	{
-		clusters = initClusters(points, num_clusters);
-		List<KCluster> prevCentroids, currCentroids = 
+		clusters = initRandomClusters(num_clusters, documents);
 		double distance;
-		int iter = 1;
-		do
+		while(checkAllConverged())
 		{
-			clusters = maximize(points, centroids, num_clusters);
+		    List<Double> distances = new ArrayList<>();
+		    for (KCluster cluster : prior) {
+		      clusters.add(cluster);
+		      distances.add(cluster.distance(cluster, cluster.centroid));
+		    }
+			updateWeights(clusters, clusterDistances);
 		}
-		updateClusters();
 		
 	}
 
-	private List<KCluster> maximize(List<SparseFeatureVector> points, List<SparseFeatureVector> centroids, int num_clusters) {
-		
-		return null;
+	private List<KCluster> initRandomClusters(int num_clusters, List<SparseFeatureVector> points) {
+		clusters = IntStream.range(0, num_clusters).mapToObj(i -> new KCluster(i)).collect(Collectors.toList());
+		Random rand = new Random(1);
+		for (int i=0; i<points.size(); i++)
+			clusters.get(rand.nextInt(num_clusters)).addDocument(i,0);
+		initCentroids(points, clusters);
+		reweighDocuments(points);
+		return clusters;
+	}
+	
+	private void reweighDocuments(List<SparseFeatureVector> points)
+	{
+		for (KCluster cluster : clusters)
+		{
+			cluster.reweighDocuments(points);
+		}
 	}
 
-	private List<KCluster> initCentroids(List<SparseFeatureVector> points, int num_clusters) {
-		// TODO Auto-generated method stub
-		return null;
+	private void initCentroids(List<SparseFeatureVector> points, List<KCluster> clusters) {
+		for (KCluster cluster : clusters)
+		{
+			centroids.add(cluster.updateCentroid(points, 1));
+		}
 	}
-
-	protected boolean update(IntDoubleMapInstance instance, int averageCount) {
+	
+	protected boolean update(IntDoubleMapInstance instance, int averageCount, List<KCluster> prior) {
 		updateClusters(instance, instance.getWeightedLabels());
+		updateWeights();
 		return false;
 	}
 
-	private void updateClusters(IntDoubleMapInstance instance, IntDoubleMap intDoubleMap) {
-		
-		while (!checkAllConverged())
-		{
-			
-		}
+	private void updateClusters(IntDoubleMapInstance instance, IntDoubleMap intDoubleMap) 
+	{
 		SparseFeatureVector vector = instance.getFeatureVector();
 		int i, vectorIndex, len = vector.size();
 		double vectorWeight;
@@ -81,21 +99,23 @@ public class FuzzyCmeans extends AbstractFuzzyCmeans
 		{
 			vectorIndex = vector.getIndex(i);
 			vectorWeight = MathUtils.sq(vector.getWeight(i));
-			updateClusters();
+		}
+		while (!checkAllConverged())
+		{
+			
 		}
 	}
 
-	private void computeProbabilities(List<KCluster> clusters, List<Double> clusterDistances) {
+	private void updateWeights(List<KCluster> clusters, List<Double> clusterDistances) {
 		int i;
 		double weight;
 		for (i=0; i < clusters.size(); i++) {
-			weight = computeProbabilities(clusterDistances.get(i), clusterDistances);
+			weight = updateWeights(clusterDistances.get(i), clusterDistances);
 			clusters.get(i).getDocumentWeights().put(i, weight);
 		}
 	}
 	
-	
-	private double computeProbabilities(double clusterDistance, List<Double> clusterDistances) {
+	private double updateWeights(double clusterDistance, List<Double> clusterDistances) {
 		if (clusterDistance == 0)
 			clusterDistance = MINIMAL_VALUE;
 		

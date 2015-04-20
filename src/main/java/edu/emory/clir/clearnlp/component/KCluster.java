@@ -5,22 +5,31 @@ import java.util.Map.Entry;
 
 import edu.emory.clir.clearnlp.classification.vector.MultiWeightVector;
 import edu.emory.clir.clearnlp.classification.vector.SparseFeatureVector;
+import net.openhft.koloboke.collect.map.IntDoubleMap;
 
 public class KCluster extends AbstractCluster {
 
 	private boolean converged;
-	public KCluster(SparseFeatureVector center, int id) {
+	protected IntDoubleMap documentWeights;
+	
+	public KCluster(SparseFeatureVector center, int id)
+	{
 		super(center, id);
 	}
 	
-	public boolean computeConvergence(List<SparseFeatureVector> points, double convergenceDelta) {
-		SparseFeatureVector centroid = computeCentroid(points);
-		converged = distance(centroid, getCenter()) <= convergenceDelta;
-		this.centroid = centroid;
-		return converged;
+	public KCluster(int id)
+	{
+		super(id);
 	}
 
-	private SparseFeatureVector computeCentroid(List<SparseFeatureVector> points) {
+	public SparseFeatureVector updateCentroid(List<SparseFeatureVector> points, double convergenceDelta) {
+		SparseFeatureVector centroid = updateCentroid(points);
+		this.converged = distance(centroid, getCenter()) <= convergenceDelta;
+		this.centroid = centroid;
+		return centroid;
+	}
+
+	private SparseFeatureVector updateCentroid(List<SparseFeatureVector> points) {
 		MultiWeightVector centroid = new MultiWeightVector();
 		int i;
 		float weight;
@@ -39,6 +48,7 @@ public class KCluster extends AbstractCluster {
 		}
 		return toSparseVector(centroid);
 	}
+	
 	private double distance(SparseFeatureVector v1, SparseFeatureVector v2)
 	{
 		double dotProduct=0, mag1=0,mag2=0;
@@ -74,9 +84,36 @@ public class KCluster extends AbstractCluster {
 		
 		return dotProduct/(mag1*mag2);
 	}
+	
+	public void addDocument(int document, double weight)
+	{
+		documentWeights.put(document, weight);
+		totalObservations++;
+	}
+	
 	@Override
 	public boolean isConverged() {
 		return converged;
+	}
+
+	public IntDoubleMap getDocumentWeights() {
+		return documentWeights;
+	}
+
+	public void setDocumentWeights(IntDoubleMap documentWeights)
+	{
+		this.documentWeights = documentWeights;
+	}
+
+	public void reweighDocuments(List<SparseFeatureVector> points)
+	{
+		double weight;
+		for (Entry<Integer, Double> indexWeightPair : documentWeights.entrySet())
+		{
+			SparseFeatureVector point = points.get(indexWeightPair.getKey());
+			weight = 1/distance(point, centroid);
+			documentWeights.put(indexWeightPair.getKey().intValue(), weight);
+		}
 	}
 
 }
