@@ -2,12 +2,9 @@ package edu.emory.clir.clearnlp.component;
 
 import org.kohsuke.args4j.Option;
 
-import edu.emory.clir.clearnlp.bin.helper.AbstractClassifyOnline;
 import edu.emory.clir.clearnlp.classification.configuration.AbstractTrainerConfiguration;
-import edu.emory.clir.clearnlp.classification.instance.IntInstance;
 import edu.emory.clir.clearnlp.classification.model.AbstractModel;
 import edu.emory.clir.clearnlp.classification.model.SparseModel;
-import edu.emory.clir.clearnlp.classification.model.StringModel;
 import edu.emory.clir.clearnlp.classification.trainer.AbstractTrainer;
 
 public class FuzzyCmeansClusterer extends AbstractClustererOnline {
@@ -18,12 +15,10 @@ public class FuzzyCmeansClusterer extends AbstractClustererOnline {
 	private int num_clusters   = 1;
 	@Option(name="-b", usage="the seed (default: 0.0)", required=false, metaVar="<long>")
 	private long seed  = 0;
-
 	
 	public FuzzyCmeansClusterer(String[] args) {
 		super(args);
 	}
-
 
 	@Override
 	protected AbstractTrainerConfiguration createTrainConfiguration() {

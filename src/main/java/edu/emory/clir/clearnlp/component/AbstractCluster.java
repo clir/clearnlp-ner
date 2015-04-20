@@ -13,7 +13,7 @@ abstract public class AbstractCluster implements Cluster
 	protected int id;
 	protected long numObservations;
 	protected long totalObservations;
-	protected SparseFeatureVector center;
+	protected SparseFeatureVector centroid;
 	protected SparseFeatureVector radius;
 	protected IntDoubleMap documentWeights;
 
@@ -22,7 +22,7 @@ abstract public class AbstractCluster implements Cluster
 	{
 		this.numObservations = 0l;
 		this.totalObservations = 0l;
-		this.center = point;
+		this.centroid = point;
 		this.radius = new SparseFeatureVector(true);
 		this.id = id;
 	}
@@ -66,11 +66,11 @@ abstract public class AbstractCluster implements Cluster
 	}
 
 	public SparseFeatureVector getCenter() {
-		return center;
+		return centroid;
 	}
 
 	public void setCenter(SparseFeatureVector center) {
-		this.center = center;
+		this.centroid = center;
 	}
 
 	public SparseFeatureVector getRadius() {

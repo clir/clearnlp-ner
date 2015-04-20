@@ -16,6 +16,7 @@ public class KCluster extends AbstractCluster {
 	public boolean computeConvergence(List<SparseFeatureVector> points, double convergenceDelta) {
 		SparseFeatureVector centroid = computeCentroid(points);
 		converged = distance(centroid, getCenter()) <= convergenceDelta;
+		this.centroid = centroid;
 		return converged;
 	}
 

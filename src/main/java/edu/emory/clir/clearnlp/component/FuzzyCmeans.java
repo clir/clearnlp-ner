@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.mahout.clustering.display.ClustersFilterTest;
+
 import edu.emory.clir.clearnlp.classification.configuration.AbstractTrainerConfiguration;
 import edu.emory.clir.clearnlp.classification.instance.IntInstance;
 import edu.emory.clir.clearnlp.classification.model.AbstractModel;
@@ -23,7 +25,6 @@ import net.openhft.koloboke.collect.map.IntDoubleMap;
 
 public class FuzzyCmeans extends AbstractFuzzyCmeans
 {
-	
 	private static final double MINIMAL_VALUE = 0.0000000001;
 	private double m = 2.0;
 
@@ -34,6 +35,31 @@ public class FuzzyCmeans extends AbstractFuzzyCmeans
 	public FuzzyCmeans(SparseModel model, int labelCutoff, int featureCutoff, double fuzziness, int num_clusters, long seed) {
 		super(model, fuzziness, num_clusters, seed);
 		m = fuzziness;
+		initRandomClusters();
+	}
+
+	private void initRandomClusters()
+	{
+		clusters = initClusters(points, num_clusters);
+		List<KCluster> prevCentroids, currCentroids = 
+		double distance;
+		int iter = 1;
+		do
+		{
+			clusters = maximize(points, centroids, num_clusters);
+		}
+		updateClusters();
+		
+	}
+
+	private List<KCluster> maximize(List<SparseFeatureVector> points, List<SparseFeatureVector> centroids, int num_clusters) {
+		
+		return null;
+	}
+
+	private List<KCluster> initCentroids(List<SparseFeatureVector> points, int num_clusters) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	protected boolean update(IntDoubleMapInstance instance, int averageCount) {
@@ -42,6 +68,11 @@ public class FuzzyCmeans extends AbstractFuzzyCmeans
 	}
 
 	private void updateClusters(IntDoubleMapInstance instance, IntDoubleMap intDoubleMap) {
+		
+		while (!checkAllConverged())
+		{
+			
+		}
 		SparseFeatureVector vector = instance.getFeatureVector();
 		int i, vectorIndex, len = vector.size();
 		double vectorWeight;
