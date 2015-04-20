@@ -8,10 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.mahout.clustering.Cluster;
-import org.apache.mahout.clustering.display.ClustersFilterTest;
-import org.apache.mahout.clustering.fuzzykmeans.SoftCluster;
-
 import edu.emory.clir.clearnlp.classification.configuration.AbstractTrainerConfiguration;
 import edu.emory.clir.clearnlp.classification.instance.IntInstance;
 import edu.emory.clir.clearnlp.classification.model.AbstractModel;
@@ -42,18 +38,17 @@ public class FuzzyCmeans extends AbstractFuzzyCmeans
 		initClusters(prior);
 	}
 
-	private void initClusters()
+	private void initClusters(List<KCluster> prior)
 	{
-		clusters = initRandomClusters(num_clusters, documents);
-		double distance;
-		while(checkAllConverged())
+		if (prior != null)
+			clusters = prior;
+		else
 		{
-		    List<Double> distances = new ArrayList<>();
-		    for (KCluster cluster : prior) {
-		      clusters.add(cluster);
-		      distances.add(cluster.distance(cluster, cluster.centroid));
-		    }
-			updateWeights(clusters, clusterDistances);
+			clusters = initRandomClusters(num_clusters, documents);
+		}
+		while(!checkAllConverged())
+		{
+		    
 		}
 		
 	}
@@ -92,6 +87,13 @@ public class FuzzyCmeans extends AbstractFuzzyCmeans
 	private void updateClusters(IntDoubleMapInstance instance, IntDoubleMap intDoubleMap) 
 	{
 		SparseFeatureVector vector = instance.getFeatureVector();
+		
+		List<Double> distances = new ArrayList<>();
+	    for (KCluster cluster : prior) {
+	      clusters.add(cluster);
+	      distances.add(cluster.distance(cluster, cluster.centroid));
+	    }
+	    
 		int i, vectorIndex, len = vector.size();
 		double vectorWeight;
 		
