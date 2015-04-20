@@ -15,6 +15,7 @@
  */
 package edu.emory.clir.clearnlp.component.mode.ner;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +23,7 @@ import java.util.StringJoiner;
 import java.util.function.Function;
 
 import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
+import edu.emory.clir.clearnlp.collection.map.ObjectIntHashMap;
 import edu.emory.clir.clearnlp.collection.pair.ObjectIntPair;
 import edu.emory.clir.clearnlp.collection.tree.PrefixNode;
 import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
@@ -31,6 +33,7 @@ import edu.emory.clir.clearnlp.component.utils.CFlag;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
 import edu.emory.clir.clearnlp.ner.BILOU;
+import edu.emory.clir.clearnlp.util.Joiner;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
 
 /**
@@ -124,7 +127,31 @@ public class NERState extends AbstractTagState
 	{
 		return ambiguity_classes[node.getID()];
 	}
-	
+
+	public String[] getCooccuranceFeatures(DEPNode node)
+	{
+		String[] categories = {"PER", "LOC", "ORG", "Event", "Work"};
+		int[] cooccurrences = new int[categories.length];
+		int i;
+		List<DEPNode> prevWords = node.getSubNodeList();
+		for (DEPNode prevWord : prevWords) {
+			for (i=0;i<categories.length;i++) {
+				if (prevWord.getNamedEntityTag().equals(categories[i])) {
+					cooccurrences[i]++;
+				}
+			}
+		}
+		StringJoiner[] joiner= new StringJoiner[categories.length];
+		String[] features = new String[categories.length];
+		for (i=0;i<categories.length;i++) {
+			joiner[i]= new StringJoiner("-");
+			joiner[i].add(categories[i])
+				.add(Double.toString(cooccurrences[i]/Math.log(prevWords.size())));
+			features[i] = joiner[i].toString();
+		}
+		
+		return features;
+	}
 	public String[] getClusterFeatures(DEPNode node, int type)
 	{
 		Set<String> set = cluster_list.get(type).get(node.getWordForm());
