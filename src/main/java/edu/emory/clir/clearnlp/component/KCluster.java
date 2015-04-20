@@ -3,20 +3,23 @@ package edu.emory.clir.clearnlp.component;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.carrotsearch.hppc.cursors.DoubleCursor;
+
 import edu.emory.clir.clearnlp.classification.vector.MultiWeightVector;
 import edu.emory.clir.clearnlp.classification.vector.SparseFeatureVector;
+import edu.emory.clir.clearnlp.collection.list.DoubleArrayList;
 import net.openhft.koloboke.collect.map.IntDoubleMap;
 
 public class KCluster extends AbstractCluster {
 
 	private boolean converged;
-	protected IntDoubleMap documentWeights;
+	protected DoubleArrayList documentWeights;
 	
 	public KCluster(SparseFeatureVector center, int id)
 	{
 		super(center, id);
 	}
-	
+	F
 	public KCluster(int id)
 	{
 		super(id);
@@ -31,9 +34,9 @@ public class KCluster extends AbstractCluster {
 
 	private SparseFeatureVector updateCentroid(List<SparseFeatureVector> points) {
 		MultiWeightVector centroid = new MultiWeightVector();
-		int i;
+		int i, j, E;
 		float weight;
-		for (Entry<Integer, Double> indexWeightPair : documentWeights.entrySet())
+		for (DoubleCursor indexWeightPair : documentWeights)
 		{
 			SparseFeatureVector point = points.get(indexWeightPair.getKey());
 			for (i=0; i<point.size();i++)
