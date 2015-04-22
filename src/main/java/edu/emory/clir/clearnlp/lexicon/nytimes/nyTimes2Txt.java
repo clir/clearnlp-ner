@@ -37,9 +37,9 @@ public class nyTimes2Txt implements nyTimesHTML {
 			sb.setLength(0);
 			jsoupDoc = Jsoup.parse(htmlFile, UTF, " ");
 			pdate =  jsoupDoc.getElementsByAttributeValue(NAME,PDATE).get(0).attr(CONTENT);
-			title = jsoupDoc.getElementsByTag(TITLE).get(0).text();
+			title = jsoupDoc.getElementsByTag(TITLE).get(0).text().replace(' ', '_').replace('/', '_');
 			sb.append(targetPath);
-			sb.append(StringConst.BW_SLASH);
+			sb.append(StringConst.FW_SLASH);
 			sb.append(pdate);
 			sb.append(StringConst.UNDERSCORE);
 			sb.append(title);
