@@ -40,16 +40,6 @@ public class NEREval extends AbstractF1Eval<String>
 		r_total   += gMap.size();
 	}
 	
-	public void countCorrect(DEPTree sTree, String[] gLabels, String types[])
-	{
-		IntObjectHashMap<String> gMap = collectNamedEntityMap(gLabels, String::toString);
-		IntObjectHashMap<String> sMap = collectNamedEntityMap(sTree.toNodeArray(), DEPNode::getNamedEntityTag);
-		
-		n_correct += count(sMap, gMap, types);
-		p_total   += sMap.size();
-		r_total   += gMap.size();
-	}
-	
 	private int count(IntObjectHashMap<String> map1, IntObjectHashMap<String> map2)
 	{
 		int count = 0;
@@ -59,26 +49,6 @@ public class NEREval extends AbstractF1Eval<String>
 		{
 			s2 = map2.get(p1.i);
 			if (s2 != null && s2.equals(p1.o)) count++; 
-		}
-		
-		return count;
-	}
-	
-	private int count(IntObjectHashMap<String> map1, IntObjectHashMap<String> map2, String[] types)
-	{
-		int count = 0;
-		String s2;
-		
-		for (ObjectIntPair<String> p1 : map1)
-		{
-			s2 = map2.get(p1.i);
-			for (String type : types)
-				if (s2.equals(type)) {
-					if (s2 != null && s2.equals(p1.o)) {
-						count++;
-					}
-					break;
-				}
 		}
 		
 		return count;

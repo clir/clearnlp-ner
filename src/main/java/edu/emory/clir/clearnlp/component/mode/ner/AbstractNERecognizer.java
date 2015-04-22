@@ -38,11 +38,6 @@ import edu.emory.clir.clearnlp.util.constant.StringConst;
  */
 public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<String, NERState, NEREval, CommonFeatureExtractor<NERState>>
 {
-	private NEREval per_eval;
-	private NEREval org_eval;
-	private NEREval loc_eval;
-	private NEREval misc_eval;
-	
 	private NERLexicon ner_lexicon;
 	public AbstractNERecognizer() {};
 	
@@ -99,10 +94,6 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	protected void initEval()
 	{
 		c_eval = new NEREval();
-		per_eval = new NEREval();
-		org_eval = new NEREval();
-		loc_eval = new NEREval();
-		misc_eval = new NEREval();
 	}
 	
 //	====================================== PROCESS ======================================
@@ -122,14 +113,8 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 			
 			if (isTrainOrBootstrap())
 				s_models[0].addInstances(instances);
-			else if (isEvaluate()) {
-				String[] oracle = state.getOracle();
-				c_eval.countCorrect(tree, oracle);
-				per_eval.countCorrect(tree, oracle, new String[]{"PER"});
-				org_eval.countCorrect(tree, oracle, new String[]{"ORG"});
-				loc_eval.countCorrect(tree, oracle, new String[]{"LOC"});
-				misc_eval.countCorrect(tree, oracle, new String[]{"WORK", "EVENT"});
-			}
+			else if (isEvaluate())
+				c_eval.countCorrect(tree, state.getOracle());
 		}
 	}
 
