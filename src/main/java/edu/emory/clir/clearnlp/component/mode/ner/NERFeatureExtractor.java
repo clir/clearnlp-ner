@@ -50,8 +50,6 @@ public class NERFeatureExtractor extends CommonFeatureExtractor<NERState>
 		switch (token.getField())
 		{
 		case ct: return state.getClusterFeatures(node, (int)token.getValue());
-		case co: return state.getCooccuranceFeatures(node);
-//		case gl: return state.getGlobalFeatures(node);
 		default: return super.getFeatures(token, state, node);
 		}
 	}
