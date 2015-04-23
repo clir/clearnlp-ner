@@ -22,9 +22,6 @@ import edu.emory.clir.clearnlp.util.IOUtils;
 public class nyTimesUrl {
 
 
-	//API key: e9021729d847504e154cd091f1ac1ecf:6:71762791
-	//Base: http://api.nytimes.com/svc/search/v2/articlesearch
-	//http://api.nytimes.com/svc/search/v2/articlesearch.response-format?[q=search term&fq=filter-field:(filter-term)&additional-params=values]&api-key=####
 	static public void main(String[] args) throws Exception{
 		//q  = query term 
 		//fq = filter query fq=news_desk:("Sports" "Foreign") returns sports desk or foreign
@@ -36,7 +33,7 @@ public class nyTimesUrl {
 		//response_format response format (.json | .jsonp)
 		//filter  (Sports news desk)
 		
-		
+		// ADD GENRES
 		List<String> filters = new ArrayList<>();
 		filters.add("&fq=news_desk:(\"sports\")&sort=oldest&fl=web_url");
 		filters.add("&fq=news_desk:(\"Business\")&sort=oldest&fl=web_url");
@@ -52,17 +49,17 @@ public class nyTimesUrl {
 		//Base url
 		String base= "http://api.nytimes.com/svc/search/v2/articlesearch.json?";
 		
-		
+		// Add calender Month,Amount of days
 		Map<String,Integer> calender = new HashMap<>();
-		calender.put("01", 31);
-		calender.put("02",28);
-		calender.put("03",31);
-		calender.put("04",5);
-//		calender.put("08",31);
-//		calender.put("09",30);
-//		calender.put("10",31);
-//		calender.put("11",30);
-//		calender.put("12",31);
+//		calender.put("01", 31);
+//		calender.put("02",28);
+//		calender.put("03",31);
+//		calender.put("04",5);
+		calender.put("08",31);
+		calender.put("09",30);
+		calender.put("10",31);
+		calender.put("11",30);
+		calender.put("12",31);
 
 
 		
