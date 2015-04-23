@@ -20,7 +20,6 @@ import java.util.List;
 
 import edu.emory.clir.clearnlp.classification.instance.StringInstance;
 import edu.emory.clir.clearnlp.classification.model.StringModel;
-import edu.emory.clir.clearnlp.classification.trainer.AbstractOnlineTrainer;
 import edu.emory.clir.clearnlp.classification.vector.StringFeatureVector;
 import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
@@ -30,6 +29,8 @@ import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
 import edu.emory.clir.clearnlp.feature.common.CommonFeatureExtractor;
 import edu.emory.clir.clearnlp.ner.BILOU;
+import edu.emory.clir.clearnlp.ner.NERInfoSet;
+import edu.emory.clir.clearnlp.ner.NERTag;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
 
 /**
@@ -155,53 +156,18 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 		}
 	}
 	
-	public void learnDictionary(DEPTree tree, PrefixTree<String,NERInfoSet> dictionary)
-	{
-		for (DEPNode node : tree) if (node.getNamedEntityTag() == null) node.setNamedEntityTag("O");
-		NERState state = new NERState(tree, CFlag.TRAIN, dictionary);
-		state.adjustDictionary();
-	}
-	
 //	====================================== ONLINE TRAIN ======================================
 
 	@Override
 	public void onlineTrain(List<DEPTree> trees)
 	{
-		// TODO Auto-generated method stub
-		
-	}
-	
-	public void onlineTrain(AbstractOnlineTrainer trainer, List<DEPTree> trees)
-	{
-//		double currScore = onlineScore(trees);
-//		if (currScore == 100) return;
-//		onlineBootstrap(trees);
-//		byte[] prevModels;
-//		double prevScore;
-//		
-//		try
-//		{
-//			while (true)
-//			{
-//				prevModels = toByteArray();
-//				prevScore  = currScore;
-//				
-//				trainer.train();
-//				currScore = onlineScore(trees);
-//				
-//				if (prevScore >= currScore)
-//				{
-//					initDecode(prevModels);
-//					break;
-//				}
-//			}			
-//		}
-//		catch (Exception e) {e.printStackTrace();}
+		onlineTrainSingleAdaGrad(trees);
 	}
 	
 	@Override
 	protected void onlineLexicons(DEPTree tree)
 	{
-			
+		NERState state = new NERState(tree, CFlag.TRAIN, ner_lexicon);
+		state.adjustDictionary();
 	}
 }

@@ -15,12 +15,7 @@
  */
 package edu.emory.clir.clearnlp.component.mode.ner;
 
-import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
@@ -30,11 +25,10 @@ import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.component.utils.NLPUtils;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
-import edu.emory.clir.clearnlp.util.BinUtils;
+import edu.emory.clir.clearnlp.ner.NERInfoSet;
 import edu.emory.clir.clearnlp.util.Joiner;
 import edu.emory.clir.clearnlp.util.Splitter;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
-import edu.emory.clir.clearnlp.util.lang.TLanguage;
 
 
 /**
@@ -45,7 +39,6 @@ public class NERLexicon implements Serializable
 {
 	private static final long serialVersionUID = 3816259878124239839L;
 	private PrefixTree<String,NERInfoSet> ner_dictionary;
-	private List<Map<String,Set<String>>> cluster_list;
 	private Bigram<String,String> dict_counts;
 	private Set<String> collect_labels;
 	private int collect_cutoff;
@@ -54,14 +47,10 @@ public class NERLexicon implements Serializable
 	{
 		setDictionaryCutoff(configuration.getCollectCutoff());
 		collect_labels = configuration.getCollectLabelSet();
-		cluster_list = new ArrayList<>();
 		dict_counts = new Bigram<>();
 		
-		if (configuration.getDictionaryPath() != null) setDictionary(getNERDictionary(configuration.getLanguage(), configuration.getDictionaryPath()));
+		if (configuration.getDictionaryPath() != null) setDictionary(NLPUtils.getNERDictionary(configuration.getDictionaryPath()));
 		else setDictionary(new PrefixTree<>());
-		
-		for (String path : configuration.getClusterPaths())
-			addCluster(getClusters(path));
 	}
 
 	public void collect(DEPTree tree)
@@ -107,21 +96,6 @@ public class NERLexicon implements Serializable
 		ner_dictionary = dictionary;
 	}
 	
-	public List<Map<String,Set<String>>> getClusterList()
-	{
-		return cluster_list;
-	}
-	
-	public Map<String,Set<String>> getClusterMap(int index)
-	{
-		return cluster_list.get(index);
-	}
-	
-	public void addCluster(Map<String,Set<String>> cluster)
-	{
-		cluster_list.add(cluster);
-	}
-	
 	public int getDictionaryCutoff()
 	{
 		return collect_cutoff;
@@ -130,45 +104,5 @@ public class NERLexicon implements Serializable
 	public void setDictionaryCutoff(int cutoff)
 	{
 		collect_cutoff = cutoff;
-	}
-	
-	@SuppressWarnings("unchecked")
-	static public PrefixTree<String,NERInfoSet> getNEDictionary(TLanguage language, ObjectInputStream in)
-	{
-		BinUtils.LOG.info("Loading named entity dictionary.\n");
-		PrefixTree<String,NERInfoSet> tree = null;
-		
-		try
-		{
-			tree = (PrefixTree<String,NERInfoSet>)in.readObject();
-		}
-		catch (Exception e) {e.printStackTrace();}
-		
-		return tree;
-	}
-	
-	static public PrefixTree<String,NERInfoSet> getNERDictionary(TLanguage language, String modelPath)
-	{
-		return getNEDictionary(language, NLPUtils.getObjectInputStream(modelPath));
-	}
-	
-	@SuppressWarnings("unchecked")
-	static public Map<String,Set<String>> getClusters(ObjectInputStream in)
-	{
-		BinUtils.LOG.info("Loading distributional semantics.\n");
-		Map<String,Set<String>> map = null;
-		
-		try
-		{
-			map = (HashMap<String,Set<String>>)in.readObject();
-		}
-		catch (Exception e) {e.printStackTrace();}
-		
-		return map;
-	}
-	
-	static public Map<String,Set<String>> getClusters(String modelPath)
-	{
-		return getClusters(NLPUtils.getObjectInputStream(modelPath));
 	}
 }

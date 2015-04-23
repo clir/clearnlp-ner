@@ -15,8 +15,11 @@
  */
 package edu.emory.clir.clearnlp.bin;
 
-import edu.emory.clir.clearnlp.component.mode.ner.AbstractNERecognizer;
+import java.util.ArrayList;
+import java.util.List;
+
 import edu.emory.clir.clearnlp.component.mode.ner.DefaultNERecognizer;
+import edu.emory.clir.clearnlp.component.utils.GlobalLexica;
 import edu.emory.clir.clearnlp.component.utils.NLPUtils;
 
 /**
@@ -26,7 +29,12 @@ public class NERDecode
 {
 	static public void main(String[] args)
 	{
-		String model = "general-en-ner.xz";
-		AbstractNERecognizer ner = new DefaultNERecognizer(NLPUtils.getObjectInputStream(model));
+		List<String> dsw = new ArrayList<>();
+		dsw.add("brown-rcv1.clean.tokenized-CoNLL03.txt-c1000-freq1.txt.xz");
+		dsw.add("model-2030000000.LEARNING_RATE=1e-09.EMBEDDING_LEARNING_RATE=1e-06.EMBEDDING_SIZE=100.txt.xz");
+		dsw.add("hlbl_reps_clean_2.50d.rcv1.clean.tokenized-CoNLL03.case-intact.txt.xz");
+		GlobalLexica.initDistributionalSemanticsWords(dsw);
+		
+		new DefaultNERecognizer(NLPUtils.getObjectInputStream("general-en-ner.xz"));
 	}
 }

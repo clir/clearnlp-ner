@@ -18,7 +18,7 @@
 	<feature f0="i:a"/>
 	<feature f0="i-1:a"/>
 	<feature f0="i+1:a"/>
-
+	
 	<feature f0="i:orth"/>
 	<feature f0="i-1:f2"/>
 	<feature f0="i+1:orth"/>
@@ -42,11 +42,11 @@
 	<feature f0="i+1:a" f1="i+2:a"/>
 	<feature f0="i+1:a" f1="i+2:a" f2="i+3:a"/>
 
-	<feature f0="i:ct0"/>
-	<feature f0="i+1:ct0"/>
-	<feature f0="i+2:ct0"/>
+	<feature f0="i:dsw0"/>
+	<feature f0="i+1:dsw0"/>
+	<feature f0="i+2:dsw0"/>
 	
-	<feature f0="i:ct1"/>
-	<feature f0="i:ct2"/>
+	<feature f0="i:dsw1"/>
+	<feature f0="i:dsw2"/>
 	
 </feature_template>

@@ -19,13 +19,11 @@ import java.io.InputStream;
 import java.util.Set;
 
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
 import edu.emory.clir.clearnlp.component.configuration.AbstractConfiguration;
 import edu.emory.clir.clearnlp.component.utils.NLPMode;
 import edu.emory.clir.clearnlp.util.DSUtils;
 import edu.emory.clir.clearnlp.util.Splitter;
-import edu.emory.clir.clearnlp.util.XmlUtils;
 
 /**
  * @since 3.0.3
@@ -47,7 +45,7 @@ public class NERConfiguration extends AbstractConfiguration
 	
 	public NERConfiguration(InputStream in)
 	{
-		super(in, NLPMode.ner);
+		super(NLPMode.ner, in);
 		initXml();
 	}
 	
@@ -55,25 +53,9 @@ public class NERConfiguration extends AbstractConfiguration
 	{
 		Element eMode = getModeElement();
 		
-		String dictPath = getPath("dictionary_path");
-		String collectLabels = XmlUtils.getTrimmedTextContent(XmlUtils.getFirstElementByTagName(eMode, "collect_labels"));
-		int collectCutoff = XmlUtils.getIntegerTextContent(XmlUtils.getFirstElementByTagName(eMode, "collect_cutoff"));
-		
-		initClusterPaths();
-		setDictionaryPath(dictPath);
-		setCollectCutoff(collectCutoff);
-		setCollectLabelSet(DSUtils.toHashSet(Splitter.splitCommas(collectLabels)));
-	}
-	
-	private void initClusterPaths()
-	{
-		Element eCluster = getFirstElement("cluster_paths");
-		NodeList list = eCluster.getElementsByTagName("cluster_path");
-		int i, len = list.getLength();
-		cluster_paths = new String[len];
-		
-		for (i=0; i<len; i++)
-			cluster_paths[i] = XmlUtils.getTrimmedTextContent((Element)list.item(i));
+		setDictionaryPath(getTextContent(eMode, "dictionary_path"));
+		setCollectCutoff(getIntegerTextContent(eMode, "collect_cutoff"));
+		setCollectLabelSet(DSUtils.toHashSet(Splitter.splitCommas(getTextContent(eMode, "collect_labels"))));
 	}
 	
 	public String getDictionaryPath()

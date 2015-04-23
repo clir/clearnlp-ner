@@ -16,8 +16,6 @@
 package edu.emory.clir.clearnlp.component.mode.ner;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
@@ -31,6 +29,8 @@ import edu.emory.clir.clearnlp.component.utils.CFlag;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
 import edu.emory.clir.clearnlp.ner.BILOU;
+import edu.emory.clir.clearnlp.ner.NERInfoSet;
+import edu.emory.clir.clearnlp.ner.NERTag;
 import edu.emory.clir.clearnlp.util.constant.StringConst;
 
 /**
@@ -42,19 +42,9 @@ public class NERState extends AbstractTagState
 	/** Information from prefix-tree. */
 	private List<ObjectIntIntTriple<NERInfoSet>> info_list;
 	private PrefixTree<String,NERInfoSet> ner_dictionary;
-	private List<Map<String,Set<String>>> cluster_list;
 	private String[] ambiguity_classes;
 	
 //	====================================== INITIALIZATION ======================================
-	
-	// temporary constructor
-	public NERState(DEPTree tree, CFlag flag, PrefixTree<String,NERInfoSet> dictionary)
-	{
-		super(tree, flag);
-		ner_dictionary = dictionary;
-		info_list = ner_dictionary.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
-		ambiguity_classes = getAmbiguityClasses();
-	}
 	
 	public NERState(DEPTree tree, CFlag flag, NERLexicon lexicon)
 	{
@@ -65,11 +55,10 @@ public class NERState extends AbstractTagState
 	public void init(NERLexicon lexicon)
 	{
 		ner_dictionary = lexicon.getDictionary();
-		cluster_list = lexicon.getClusterList();
 		info_list = ner_dictionary.getAll(d_tree.toNodeArray(), 1, DEPNode::getWordForm, true, false);
 		ambiguity_classes = getAmbiguityClasses();
 	}
-
+	
 	private String[] getAmbiguityClasses()
 	{
 		StringJoiner[] joiners = new StringJoiner[t_size];
@@ -98,7 +87,7 @@ public class NERState extends AbstractTagState
 		}
 		
 		String[] classes = new String[t_size];
-		for (i=1; i<t_size; i++) classes[i] = joiners[i].toString();
+		for (i=1; i<t_size; i++) classes[i] = joiners.length == 0 ? null : joiners[i].toString();
 		return classes;
 	}
 	
@@ -125,15 +114,6 @@ public class NERState extends AbstractTagState
 		return ambiguity_classes[node.getID()];
 	}
 	
-	public String[] getClusterFeatures(DEPNode node, int type)
-	{
-		Set<String> set = cluster_list.get(type).get(node.getWordForm());
-		if (set == null) return null;
-		String[] t = new String[set.size()];
-		set.toArray(t);
-		return t;
-	}
-
 //	public String[] getCooccuranceFeatures(DEPNode node)
 //	{
 //		String[] categories = {"PER", "LOC", "ORG", "MISC"};
