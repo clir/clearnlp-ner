@@ -26,6 +26,7 @@ import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
 import edu.emory.clir.clearnlp.component.state.AbstractTagState;
 import edu.emory.clir.clearnlp.component.utils.CFlag;
+import edu.emory.clir.clearnlp.dependency.DEPFeat;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
 import edu.emory.clir.clearnlp.ner.BILOU;
@@ -114,6 +115,35 @@ public class NERState extends AbstractTagState
 		return ambiguity_classes[node.getID()];
 	}
 	
+//	public void setGlobalFeatures(DEPNode node)
+//	{
+//		if (!node.getNamedEntityTag().equals("O")) {
+//			DEPFeat feats = new DEPFeat();	
+//			feats.put("g-1:f3", node.getLeftNearestSibling().getSimplifiedWordForm());
+//			feats.put("g-1:f4", node.getLeftNearestSibling().getWordShape(2));
+//			feats.put("g-1:d", node.getLeftNearestSibling().getLabel());
+//			feats.put("g-1:n", node.getLeftNearestSibling().getNamedEntityTag());
+//			
+//			feats.put("g-2:f3", node.getLeftNearestSibling(1).getSimplifiedWordForm());
+//			feats.put("g-2:f4", node.getLeftNearestSibling(1).getWordShape(2));
+//			feats.put("g-2:d", node.getLeftNearestSibling(1).getLabel());
+//			feats.put("g-2:n", node.getLeftNearestSibling(1).getNamedEntityTag());
+//			
+//			feats.put("g+1:f3", node.getRightNearestSibling().getSimplifiedWordForm());
+//			feats.put("g+1:f4", node.getRightNearestSibling().getWordShape(2));
+//			feats.put("g+1:d", node.getRightNearestSibling().getLabel());
+//			feats.put("g+1:n", node.getRightNearestSibling().getNamedEntityTag());
+//			
+//			feats.put("g+2:f3", node.getRightNearestSibling(1).getSimplifiedWordForm());
+//			feats.put("g+2:f4", node.getRightNearestSibling(1).getWordShape(2));
+//			feats.put("g+2:d", node.getRightNearestSibling(1).getLabel());
+//			feats.put("g+2:n", node.getRightNearestSibling(1).getNamedEntityTag());
+//			
+//			node.setFeats(feats);
+//		}
+//	}
+
+	
 //	public String[] getCooccuranceFeatures(DEPNode node)
 //	{
 //		String[] categories = {"PER", "LOC", "ORG", "MISC"};
@@ -135,7 +165,6 @@ public class NERState extends AbstractTagState
 //				.add(Double.toString(cooccurrences[i]/Math.log(prevWords.size())));
 //			features[i] = joiner[i].toString();
 //		}
-//		
 //		return features;
 //	}
 	
@@ -197,5 +226,10 @@ public class NERState extends AbstractTagState
 			map.put(NEREval.getKey(t.i1, t.i2, t_size), t);
 
 		return map;
+	}
+
+	public void getGlobalFeatures(DEPNode node) {
+		// TODO Auto-generated method stub
+		
 	}
 }
