@@ -18,6 +18,8 @@ package edu.emory.clir.clearnlp.bin;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.emory.clir.clearnlp.component.AbstractComponent;
+import edu.emory.clir.clearnlp.component.mode.ner.AbstractNERecognizer;
 import edu.emory.clir.clearnlp.component.mode.ner.DefaultNERecognizer;
 import edu.emory.clir.clearnlp.component.utils.GlobalLexica;
 import edu.emory.clir.clearnlp.component.utils.NLPUtils;
@@ -35,6 +37,8 @@ public class NERDecode
 		dsw.add("hlbl_reps_clean_2.50d.rcv1.clean.tokenized-CoNLL03.case-intact.txt.xz");
 		GlobalLexica.initDistributionalSemanticsWords(dsw);
 		
-		new DefaultNERecognizer(NLPUtils.getObjectInputStream("general-en-ner.xz"));
+		System.out.println("Loading named entity recognition model");
+		AbstractComponent ner = new DefaultNERecognizer(NLPUtils.getObjectInputStream("general-en-ner.xz"));
+		((AbstractNERecognizer)ner).onlineTrain(new ArrayList<>());
 	}
 }

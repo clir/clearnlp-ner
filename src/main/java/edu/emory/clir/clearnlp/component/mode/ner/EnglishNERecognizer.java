@@ -18,6 +18,7 @@ package edu.emory.clir.clearnlp.component.mode.ner;
 import java.io.ObjectInputStream;
 
 import edu.emory.clir.clearnlp.classification.model.StringModel;
+import edu.emory.clir.clearnlp.component.mode.ner.state.NERStateGreedy;
 import edu.emory.clir.clearnlp.feature.common.CommonFeatureExtractor;
 
 /**
@@ -35,13 +36,13 @@ public class EnglishNERecognizer extends AbstractNERecognizer
 	}
 	
 	/** Creates a named entity recognizer for train. */
-	public EnglishNERecognizer(CommonFeatureExtractor<NERState>[] extractors, Object lexicons)
+	public EnglishNERecognizer(CommonFeatureExtractor<NERStateGreedy>[] extractors, Object lexicons)
 	{
 		super(extractors, lexicons);
 	}
 	
 	/** Creates a named entity recognizer for bootstrap or evaluate. */
-	public EnglishNERecognizer(CommonFeatureExtractor<NERState>[] extractors, Object lexicons, StringModel[] models, boolean bootstrap)
+	public EnglishNERecognizer(CommonFeatureExtractor<NERStateGreedy>[] extractors, Object lexicons, StringModel[] models, boolean bootstrap)
 	{
 		super(extractors, lexicons, models, bootstrap);
 	}
