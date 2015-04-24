@@ -24,6 +24,7 @@ import edu.emory.clir.clearnlp.classification.vector.StringFeatureVector;
 import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
 import edu.emory.clir.clearnlp.component.AbstractStatisticalComponent;
+import edu.emory.clir.clearnlp.component.mode.ner.state.NERStateGreedy;
 import edu.emory.clir.clearnlp.component.utils.CFlag;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
@@ -37,7 +38,7 @@ import edu.emory.clir.clearnlp.util.constant.StringConst;
  * @since 3.0.3
  * @author Jinho D. Choi ({@code jinho.choi@emory.edu})
  */
-public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<String, NERState, NEREval, CommonFeatureExtractor<NERState>>
+public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<String, NERStateGreedy, NEREval, CommonFeatureExtractor<NERStateGreedy>>
 {
 	private NERLexicon ner_lexicon;
 	public AbstractNERecognizer() {};
@@ -51,13 +52,13 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	}
 	
 	/** Creates a named entity recognizer for train. */
-	public AbstractNERecognizer(CommonFeatureExtractor<NERState>[] extractors, Object lexicons)
+	public AbstractNERecognizer(CommonFeatureExtractor<NERStateGreedy>[] extractors, Object lexicons)
 	{
 		super(null, extractors, lexicons, false, 1);
 	}
 	
 	/** Creates a named entity recognizer for bootstrap or evaluate. */
-	public AbstractNERecognizer(CommonFeatureExtractor<NERState>[] extractors, Object lexicons, StringModel[] models, boolean bootstrap)
+	public AbstractNERecognizer(CommonFeatureExtractor<NERStateGreedy>[] extractors, Object lexicons, StringModel[] models, boolean bootstrap)
 	{
 		super(null, extractors, lexicons, models, bootstrap);
 	}
@@ -102,7 +103,7 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	@Override
 	public void process(DEPTree tree)
 	{
-		NERState state = new NERState(tree, c_flag, ner_lexicon);
+		NERStateGreedy state = new NERStateGreedy(tree, c_flag, ner_lexicon);
 		
 		if (isCollect())
 		{
@@ -120,18 +121,36 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	}
 
 	@Override
-	protected StringFeatureVector createStringFeatureVector(NERState state)
+	protected StringFeatureVector createStringFeatureVector(NERStateGreedy state)
 	{
 		return f_extractors[0].createStringFeatureVector(state);
 	}
 	
 	@Override
-	protected String getAutoLabel(NERState state, StringFeatureVector vector)
+	protected String getAutoLabel(NERStateGreedy state, StringFeatureVector vector)
 	{
 		return s_models[0].predictBest(vector).getLabel();
 	}
 	
 //	====================================== DICTIONARY ======================================
+	
+	public void postProcess(DEPTree tree)
+	{
+		int i, size = tree.size();
+		DEPNode node;
+		char bio;
+		
+		for (i=1; i<size; i++)
+		{
+			node = tree.get(i);
+			bio  = node.getNamedEntityTag().charAt(0);
+			
+			if (bio == 'B')
+			{
+				
+			}
+		}
+	}
 	
 	public void processDictionary(DEPTree tree, PrefixTree<String,NERInfoSet> dictionary)
 	{
@@ -167,7 +186,7 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	@Override
 	protected void onlineLexicons(DEPTree tree)
 	{
-		NERState state = new NERState(tree, CFlag.TRAIN, ner_lexicon);
+		NERStateGreedy state = new NERStateGreedy(tree, CFlag.TRAIN, ner_lexicon);
 		state.adjustDictionary();
 	}
 }

@@ -22,6 +22,7 @@ import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
 import edu.emory.clir.clearnlp.collection.ngram.Bigram;
 import edu.emory.clir.clearnlp.collection.pair.ObjectIntPair;
 import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
+import edu.emory.clir.clearnlp.component.mode.ner.state.NERStateGreedy;
 import edu.emory.clir.clearnlp.component.utils.NLPUtils;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
@@ -78,7 +79,7 @@ public class NERLexicon implements Serializable
 			for (ObjectIntPair<String> p : dict_counts.toList(type, collect_cutoff))
 			{
 				array = Splitter.splitSpace(p.o);
-				set = NERState.pick(ner_dictionary, type, array, 0, array.length, String::toString, p.i);
+				set = NERStateGreedy.pick(ner_dictionary, type, array, 0, array.length, String::toString, p.i);
 				set.addCorrectCount(p.i);
 			}
 		}

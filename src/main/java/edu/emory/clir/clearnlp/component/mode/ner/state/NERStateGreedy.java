@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.emory.clir.clearnlp.component.mode.ner;
+package edu.emory.clir.clearnlp.component.mode.ner.state;
 
 import java.util.List;
 import java.util.StringJoiner;
@@ -24,6 +24,8 @@ import edu.emory.clir.clearnlp.collection.pair.ObjectIntPair;
 import edu.emory.clir.clearnlp.collection.tree.PrefixNode;
 import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
+import edu.emory.clir.clearnlp.component.mode.ner.NEREval;
+import edu.emory.clir.clearnlp.component.mode.ner.NERLexicon;
 import edu.emory.clir.clearnlp.component.state.AbstractTagState;
 import edu.emory.clir.clearnlp.component.utils.CFlag;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
@@ -37,7 +39,7 @@ import edu.emory.clir.clearnlp.util.constant.StringConst;
  * @since 3.0.3
  * @author Jinho D. Choi ({@code jinho.choi@emory.edu})
  */
-public class NERState extends AbstractTagState
+public class NERStateGreedy extends AbstractTagState
 {
 	/** Information from prefix-tree. */
 	private List<ObjectIntIntTriple<NERInfoSet>> info_list;
@@ -46,7 +48,7 @@ public class NERState extends AbstractTagState
 	
 //	====================================== INITIALIZATION ======================================
 	
-	public NERState(DEPTree tree, CFlag flag, NERLexicon lexicon)
+	public NERStateGreedy(DEPTree tree, CFlag flag, NERLexicon lexicon)
 	{
 		super(tree, flag);
 		init(lexicon);
