@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
@@ -22,9 +23,10 @@ public class DocumentFeatureExtractor
 				if (!node.getNamedEntityTag().equals("O"))
 				{
 					occurrences.computeIfAbsent(node.getSimplifiedWordForm(), k -> new ArrayList<>()).add(node);
+					mergeSubstringKeys(occurrences);
 					if (node.getHead() != null)
 						features.put("node word to head label relation", node.getSimplifiedWordForm() + " - " + node.getHead().getLabel());
-					
+										
 					features.put(node.getSimplifiedWordForm() + " next word", tree.get(node.getID()+1).getSimplifiedWordForm());
 					features.put(node.getSimplifiedWordForm() + " next word lemma", tree.get(node.getID()+1).getLemma());
 
@@ -57,6 +59,31 @@ public class DocumentFeatureExtractor
 		return features;
 	}
 	
+	private void mergeSubstringKeys(Map<String, List<DEPNode>> occurrences) {
+		Map<String, List<DEPNode>> temp = new HashMap<>();
+		for (Entry<String, List<DEPNode>> small: occurrences.entrySet())
+		{
+			for (Entry<String, List<DEPNode>> large: occurrences.entrySet())
+			{
+				if (large.getKey().toLowerCase().contains(small.getKey().toLowerCase()))
+				{
+					temp.put(small.getKey(), large.getValue());
+					temp.put(large.getKey(), null);
+				}
+			}
+		}
+		for (Entry<String, List<DEPNode>> e: temp.entrySet())
+		{
+			if (e.getValue() == null)
+			{
+				occurrences.remove(e.getKey());
+			}
+			else {
+				occurrences.get(e.getKey()).addAll(e.getValue());
+			}
+		}
+	}
+
 	public static List<DEPNode> getSiblings(DEPNode node)
 	{
 		List<DEPNode> siblings = new ArrayList<>();
@@ -71,4 +98,28 @@ public class DocumentFeatureExtractor
 		return siblings;
 	}
 	
+	public static DEPNode getPreviousNamedEntity(DEPNode node)
+	{
+		List<DEPNode> subNodes= node.getSubNodeList();
+		for (int i = subNodes.size()-1; i>=0;i--)
+		{
+			if (!subNodes.get(i).getNamedEntityTag().equals("O"))
+			{
+				return subNodes.get(i);
+			}
+		}
+		return null;
+	}
+
+	public static int getNumberOfCapitals(String s)
+	{
+		int count = 0;
+		char[] chars = s.toCharArray();
+		for (int i=0;i<s.length();i++)
+			if (Character.isUpperCase(chars[i]))
+			{
+				count++;
+			}
+		return count;
+	}
 }
