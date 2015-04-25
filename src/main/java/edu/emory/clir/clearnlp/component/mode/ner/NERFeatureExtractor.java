@@ -38,6 +38,7 @@ public class NERFeatureExtractor extends CommonFeatureExtractor<NERStateGreedy>
 	@Override
 	protected String getFeature(CommonFeatureToken token, NERStateGreedy state, DEPNode node)
 	{
+		
 		switch (token.getField())
 		{
 		case a : return state.getAmbiguityClass(node);
