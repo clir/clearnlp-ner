@@ -20,19 +20,15 @@ import java.util.List;
 
 import edu.emory.clir.clearnlp.classification.instance.StringInstance;
 import edu.emory.clir.clearnlp.classification.model.StringModel;
+import edu.emory.clir.clearnlp.classification.prediction.StringPrediction;
 import edu.emory.clir.clearnlp.classification.vector.StringFeatureVector;
-import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
-import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
 import edu.emory.clir.clearnlp.component.AbstractStatisticalComponent;
 import edu.emory.clir.clearnlp.component.mode.ner.state.NERStateGreedy;
 import edu.emory.clir.clearnlp.component.utils.CFlag;
+import edu.emory.clir.clearnlp.dependency.DEPLib;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
 import edu.emory.clir.clearnlp.feature.common.CommonFeatureExtractor;
-import edu.emory.clir.clearnlp.ner.BILOU;
-import edu.emory.clir.clearnlp.ner.NERInfoSet;
-import edu.emory.clir.clearnlp.ner.NERTag;
-import edu.emory.clir.clearnlp.util.constant.StringConst;
 
 /**
  * @since 3.0.3
@@ -115,8 +111,21 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 			
 			if (isTrainOrBootstrap())
 				s_models[0].addInstances(instances);
-			else if (isEvaluate())
-				c_eval.countCorrect(tree, state.getOracle());
+			else
+			{
+				state.postProcess();
+				if (isEvaluate()) c_eval.countCorrect(tree, state.getOracle());
+			}
+		}
+	}
+	
+	public void stripMISC(DEPTree tree)
+	{
+		
+		for (DEPNode curr : tree)
+		{
+			if (curr.getNamedEntityTag().endsWith("MISC"))
+				curr.setNamedEntityTag("O");
 		}
 	}
 
@@ -129,50 +138,9 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	@Override
 	protected String getAutoLabel(NERStateGreedy state, StringFeatureVector vector)
 	{
-		return s_models[0].predictBest(vector).getLabel();
-	}
-	
-//	====================================== DICTIONARY ======================================
-	
-	public void postProcess(DEPTree tree)
-	{
-		int i, size = tree.size();
-		DEPNode node;
-		char bio;
-		
-		for (i=1; i<size; i++)
-		{
-			node = tree.get(i);
-			bio  = node.getNamedEntityTag().charAt(0);
-			
-			if (bio == 'B')
-			{
-				
-			}
-		}
-	}
-	
-	public void processDictionary(DEPTree tree, PrefixTree<String,NERInfoSet> dictionary)
-	{
-		String tag; int i;
-		
-		for (DEPNode node : tree) node.setNamedEntityTag("O");
-		
-		for (ObjectIntIntTriple<NERInfoSet> t : dictionary.getAll(tree.toNodeArray(), 1, DEPNode::getWordForm, true, true))
-		{
-			tag = t.o.joinTags(StringConst.COLON);
-			
-			if (t.i1 == t.i2)
-				tree.get(t.i1).setNamedEntityTag(NERTag.toBILOUTag(BILOU.U, tag));
-			else
-			{
-				tree.get(t.i1).setNamedEntityTag(NERTag.toBILOUTag(BILOU.B, tag));
-				tree.get(t.i2).setNamedEntityTag(NERTag.toBILOUTag(BILOU.L, tag));
-				
-				for (i=t.i1+1; i<t.i2; i++)
-					tree.get(i).setNamedEntityTag(NERTag.toBILOUTag(BILOU.I, tag));
-			}
-		}
+		StringPrediction[] ps = s_models[0].predictTop2(vector);
+		state.save2ndLabel(ps, DEPLib.FEAT_NER2);
+		return ps[0].getLabel();
 	}
 	
 //	====================================== ONLINE TRAIN ======================================

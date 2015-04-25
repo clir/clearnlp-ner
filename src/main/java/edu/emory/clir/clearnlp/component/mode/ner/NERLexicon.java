@@ -57,7 +57,7 @@ public class NERLexicon implements Serializable
 	public void collect(DEPTree tree)
 	{
 		DEPNode[] nodes = tree.toNodeArray();
-		IntObjectHashMap<String> map = NEREval.collectNamedEntityMap(nodes, DEPNode::getNamedEntityTag);
+		IntObjectHashMap<String> map = NERStateGreedy.collectNamedEntityMap(nodes, DEPNode::getNamedEntityTag);
 		int bIdx, eIdx, size = tree.size();
 		
 		for (ObjectIntPair<String> p : map)

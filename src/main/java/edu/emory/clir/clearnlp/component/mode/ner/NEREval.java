@@ -15,14 +15,12 @@
  */
 package edu.emory.clir.clearnlp.component.mode.ner;
 
-import java.util.function.Function;
-
 import edu.emory.clir.clearnlp.collection.map.IntObjectHashMap;
 import edu.emory.clir.clearnlp.collection.pair.ObjectIntPair;
 import edu.emory.clir.clearnlp.component.evaluation.AbstractF1Eval;
+import edu.emory.clir.clearnlp.component.mode.ner.state.NERStateGreedy;
 import edu.emory.clir.clearnlp.dependency.DEPNode;
 import edu.emory.clir.clearnlp.dependency.DEPTree;
-import edu.emory.clir.clearnlp.ner.NERTag;
 
 /**
  * @since 3.0.3
@@ -33,8 +31,8 @@ public class NEREval extends AbstractF1Eval<String>
 	@Override
 	public void countCorrect(DEPTree sTree, String[] gLabels)
 	{
-		IntObjectHashMap<String> gMap = collectNamedEntityMap(gLabels, String::toString);
-		IntObjectHashMap<String> sMap = collectNamedEntityMap(sTree.toNodeArray(), DEPNode::getNamedEntityTag);
+		IntObjectHashMap<String> gMap = NERStateGreedy.collectNamedEntityMap(gLabels, String::toString);
+		IntObjectHashMap<String> sMap = NERStateGreedy.collectNamedEntityMap(sTree.toNodeArray(), DEPNode::getNamedEntityTag);
 		
 		n_correct += count(sMap, gMap);
 		p_total   += sMap.size();
@@ -53,34 +51,5 @@ public class NEREval extends AbstractF1Eval<String>
 		}
 		
 		return count;
-	}
-	
-	static public <T>IntObjectHashMap<String> collectNamedEntityMap(T[] array, Function<T,String> f)
-	{
-		IntObjectHashMap<String> map = new IntObjectHashMap<>();
-		int i, beginIndex = -1, size = array.length;
-		String tag;
-		
-		for (i=1; i<size; i++)
-		{
-			tag = f.apply(array[i]);
-			if (tag == null || tag.length() < 3) continue;
-			
-			switch (NERTag.toBILOU(tag))
-			{
-			case U: map.put(getKey(i,i,size), NERTag.toNamedEntity(tag)); beginIndex = -1; break;
-			case B: beginIndex = i; break;
-			case L: if (0 < beginIndex&&beginIndex < i) map.put(getKey(beginIndex,i,size), NERTag.toNamedEntity(tag)); beginIndex = -1; break;
-			case O: beginIndex = -1; break;
-			case I: break;
-			}
-		}
-
-		return map;
-	}
-	
-	static public int getKey(int beginIndex, int endIndex, int size)
-	{
-		return beginIndex * size + endIndex;
 	}
 }

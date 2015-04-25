@@ -24,7 +24,6 @@ import edu.emory.clir.clearnlp.collection.pair.ObjectIntPair;
 import edu.emory.clir.clearnlp.collection.tree.PrefixNode;
 import edu.emory.clir.clearnlp.collection.tree.PrefixTree;
 import edu.emory.clir.clearnlp.collection.triple.ObjectIntIntTriple;
-import edu.emory.clir.clearnlp.component.mode.ner.NEREval;
 import edu.emory.clir.clearnlp.component.mode.ner.NERLexicon;
 import edu.emory.clir.clearnlp.component.state.AbstractTagState;
 import edu.emory.clir.clearnlp.component.utils.CFlag;
@@ -98,7 +97,8 @@ public class NERStateGreedy extends AbstractTagState
 	@Override
 	protected String clearOracle(DEPNode node)
 	{
-		return node.clearNamedEntityTag();
+		String tag = node.clearNamedEntityTag();
+		return tag.startsWith("I") ? "I" : tag;
 	}
 
 //	====================================== TRANSITION ======================================
@@ -146,7 +146,7 @@ public class NERStateGreedy extends AbstractTagState
 	/** For training. */
 	public void adjustDictionary()
 	{
-		IntObjectHashMap<String> goldMap = NEREval.collectNamedEntityMap(g_oracle, String::toString);
+		IntObjectHashMap<String> goldMap = collectNamedEntityMap(g_oracle, String::toString);
 		populateDictionary(goldMap);
 	}
 	
@@ -196,8 +196,125 @@ public class NERStateGreedy extends AbstractTagState
 		IntObjectHashMap<ObjectIntIntTriple<NERInfoSet>> map = new IntObjectHashMap<>();
 		
 		for (ObjectIntIntTriple<NERInfoSet> t : info_list)
-			map.put(NEREval.getKey(t.i1, t.i2, t_size), t);
+			map.put(NERStateGreedy.getKey(t.i1, t.i2, t_size), t);
 
 		return map;
+	}
+
+	static public <T>IntObjectHashMap<String> collectNamedEntityMap(T[] array, Function<T,String> f)
+	{
+		IntObjectHashMap<String> map = new IntObjectHashMap<>();
+		int i, beginIndex = -1, size = array.length;
+		String tag;
+		
+		for (i=1; i<size; i++)
+		{
+			tag = f.apply(array[i]);
+			if (tag == null || tag.length() < 3) continue;
+			
+			switch (NERTag.toBILOU(tag))
+			{
+			case U: map.put(getKey(i,i,size), NERTag.toNamedEntity(tag)); beginIndex = -1; break;
+			case B: beginIndex = i; break;
+			case L: if (0 < beginIndex&&beginIndex < i) map.put(getKey(beginIndex,i,size), NERTag.toNamedEntity(tag)); beginIndex = -1; break;
+			case O: beginIndex = -1; break;
+			case I: break;
+			}
+		}
+	
+		return map;
+	}
+
+	static private int getKey(int beginIndex, int endIndex, int size)
+	{
+		return beginIndex * size + endIndex;
+	}
+	
+//	====================================== POST-PROCESS ======================================
+	
+	public void postProcess()
+	{
+		int i, beginIndex = -1;
+		DEPNode curr;
+		
+		for (i=1; i<t_size; i++)
+		{
+			curr = getNode(i);
+			
+			switch (NERTag.toBILOU(curr.getNamedEntityTag()))
+			{
+			case B: beginIndex = postProcessB(curr); break;
+			case L: beginIndex = postProcessL(curr, beginIndex, i); break;
+			case U: postProcessU(curr); break;
+			case I: postProcessI(curr); break;
+			case O: beginIndex = -1; break;
+			}
+		}
+	}
+	
+	private int postProcessB(DEPNode curr)
+	{
+		DEPNode next = getNode(curr.getID()+1);
+		
+		if (next == null)
+		{
+			curr.setNamedEntityTag(NERTag.changeChunkType(BILOU.U, curr.getNamedEntityTag()));
+			return -1;
+		}
+		
+		curr.setNamedEntityTag("O");
+		return curr.getID();
+	}
+	
+	private int postProcessL(DEPNode curr, int beginIndex, int endIndex)
+	{
+		String tag = NERTag.toNamedEntity(curr.getNamedEntityTag());
+
+		if (endIndex == 1)
+		{
+			curr.setNamedEntityTag(NERTag.toBILOUTag(BILOU.U, tag));
+		}
+		else if (beginIndex > 0)
+		{
+			getNode(beginIndex).setNamedEntityTag(NERTag.toBILOUTag(BILOU.B, tag));
+			
+			for (int i=beginIndex+1; i<endIndex; i++)
+				getNode(i).setNamedEntityTag(NERTag.toBILOUTag(BILOU.I, tag));
+		}
+		else
+		{
+			curr.setNamedEntityTag("O");
+//			DEPNode prev = getNode(endIndex-1);
+//			
+//			if (prev.isNamedEntityTag("O"))
+//			{
+//				String snd = prev.getFeat(DEPLib.FEAT_NER2);
+//				
+//				if (snd != null && snd.endsWith(tag))
+//					prev.setNamedEntityTag(NERTag.toBILOUTag(BILOU.B, tag));
+//			}
+//			else if (prev.isNamedEntityTag(curr.getNamedEntityTag()))
+//				prev.setNamedEntityTag(NERTag.toBILOUTag(BILOU.B, tag));
+		}
+
+		return -1;
+	}
+	
+	private int postProcessU(DEPNode curr)
+	{
+		DEPNode next = getNode(curr.getID()+1);
+		
+		if (next != null && next.getNamedEntityTag().startsWith("L"))
+		{
+			curr.setNamedEntityTag("O");
+			return curr.getID();
+		}
+		
+		return -1;
+	}
+	
+	private void postProcessI(DEPNode curr)
+	{
+		curr.setNamedEntityTag("O");
 	}
 }
