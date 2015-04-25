@@ -121,7 +121,6 @@ public abstract class AbstractNERecognizer extends AbstractStatisticalComponent<
 	
 	public void stripMISC(DEPTree tree)
 	{
-		
 		for (DEPNode curr : tree)
 		{
 			if (curr.getNamedEntityTag().endsWith("MISC"))
